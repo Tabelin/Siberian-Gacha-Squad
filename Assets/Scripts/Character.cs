@@ -117,9 +117,11 @@ public class Character
     }
 
     // Метод для полной генерации персонажа
-    public void GenerateCharacter()
+    public void GenerateCharacter(Rarity? fixedRarity = null) // Добавлен параметр fixedRarity
     {
-        rarity = GetRandomRarity();
+        rarity = fixedRarity ?? GetRandomRarity(); // Если fixedRarity не указан, используем случайную редкость
+
+        // Генерируем статы, имя, спрайт и цвет контура
         GenerateStats(rarity);
         GenerateName(rarity);
         GenerateSprite(rarity);
@@ -131,8 +133,8 @@ public class Character
     {
         float randomValue = Random.Range(0f, 100f);
         if (randomValue < 70f) return Rarity.Common;
-        else if (randomValue < 90f) return Rarity.Rare;
-        else if (randomValue < 98f) return Rarity.Epic;
+        else if (randomValue < 95f) return Rarity.Rare;
+        else if (randomValue < 99f) return Rarity.Epic;
         else return Rarity.Legendary;
     }
 }
