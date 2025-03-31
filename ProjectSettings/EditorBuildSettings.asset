@@ -9,8 +9,11 @@ EditorBuildSettings:
     path: Assets/Scenes/Main menu.unity
     guid: d1235096535779c4bbd207070995b01b
   - enabled: 1
-    path: Assets/Scenes/Gameplay.unity
+    path: Assets/Scenes/GachaScene.unity
     guid: b66157749d9ae814e94ba904b2609143
+  - enabled: 1
+    path: Assets/Scenes/HubLocation.unity
+    guid: f861d5600e0c0154c9a612e850064aaf
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

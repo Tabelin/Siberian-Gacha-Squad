@@ -5,31 +5,40 @@ using UnityEngine.UI;
 
 public class GachaSystem : MonoBehaviour
 {
-    public GameObject characterPrefab;
-    public Transform spawnPoint;
-    public Button rollButton;
-    public Button summonFiveButton;
-    public Button acceptAllButton;
-    public Button exchangeAllButton;
-    public Button getTicketsButton;
+
+    // Singleton для доступа к данным из других скриптов
+    public static GachaSystem Instance;
+    public GameObject characterPrefab;  // Префаб для персонажа
+    public Transform spawnPoint;         // Точка спавна персонажа
+    public Button rollButton;           // Кнопка для ролла гаче-машины
+    public Button summonFiveButton;      // Кнопка для ролла гаче-машины
+    public Button acceptAllButton;      // Кнопка для принятия всех персонажей
+    public Button exchangeAllButton;     // Кнопка для обмена всех персонажей на ДНК
+    public Button getTicketsButton;     // Кнопка для обмена всех персонажей на ДНК
+    // UI для отображения количества талонов
     public Image gachaTicketIcon;
     public Text gachaTicketCountText;
+    // UI для отображения количества ДНК
     public Image dnaPieceIcon;
     public Text dnaPieceCountText;
-    public Transform characterRowParent;
-    public GameObject characterRowItemPrefab;
-    public RuntimeAnimatorController commonController;
+
+    public Transform characterRowParent;                  // Родительский объект для ряда персонажей
+    public GameObject characterRowItemPrefab;             // Префаб элемента ряда персонажей
+    // Префаб элемента ряда персонажей
+    public RuntimeAnimatorController commonController;    
     public RuntimeAnimatorController rareController;
     public RuntimeAnimatorController epicController;
     public RuntimeAnimatorController legendaryController;
+    // Массивы спрайтов для каждой редкости
     public Sprite[] commonSprites;
     public Sprite[] rareSprites;
     public Sprite[] epicSprites;
     public Sprite[] legendarySprites;
 
-    private List<GameObject> currentCharacters = new List<GameObject>();
-    private int gachaTickets = 10;
+    private List<GameObject> currentCharacters = new List<GameObject>();             // Список текущих элементов ряда
+    private int gachaTickets = 10;                                                   // Количество талонов
     private int dnaFragments = 0;
+    // Стоимость персонажей через ДНК
     private Dictionary<Rarity, int> dnaCostByRarity = new Dictionary<Rarity, int>
     {
         { Rarity.Common, 10 },
@@ -38,7 +47,13 @@ public class GachaSystem : MonoBehaviour
         { Rarity.Legendary, 1000 }
     };
 
-    private const int maxCharactersInRow = 6;
+    private const int maxCharactersInRow = 6;     // Стоимость персонажей через ДНК
+
+    void Awake()
+    {
+        // Инициализируем Singleton
+        Instance = this;
+    }
 
     void Start()
     {
@@ -50,13 +65,13 @@ public class GachaSystem : MonoBehaviour
             Debug.LogError("Необходимо назначить все ссылки!");
             return;
         }
-
+        // Проверяем, что массивы спрайтов не пустые
         if (commonSprites.Length == 0 || rareSprites.Length == 0 || epicSprites.Length == 0 || legendarySprites.Length == 0)
         {
             Debug.LogError("Не все спрайты были добавлены в инспектор!");
             return;
         }
-
+        // Инициализируем словарь спрайтов в классе Character
         Character.spritesByRarity = new Dictionary<Rarity, Sprite[]>
         {
             { Rarity.Common, commonSprites },
@@ -64,35 +79,36 @@ public class GachaSystem : MonoBehaviour
             { Rarity.Epic, epicSprites },
             { Rarity.Legendary, legendarySprites }
         };
-
+        // Инициализируем словарь спрайтов в классе Character
         Character.defaultSprite = commonSprites.Length > 0 ? commonSprites[0] : null;
-
+        // Обновляем текст талонов и ДНК
         UpdateGachaTicketCount();
         UpdateDnaFragmentCount();
-
+        // Обновляем состояние кнопок
         UpdateRollButtonState();
         UpdateSummonFiveButtonState();
         UpdateAcceptAllButtonState();
         UpdateExchangeAllButtonState();
         UpdateGetTicketsButtonState();
     }
-
+    // Метод для выполнения ролла гаче
     public void RollGacha(int count = 1)
     {
         if (gachaTickets >= count && CanAddCharacters(count))
         {
+            // Метод для выполнения ролла гаче
             gachaTickets -= count;
             UpdateGachaTicketCount();
 
             for (int i = 0; i < count; i++)
             {
                 Character newCharacter = new Character();
-                newCharacter.GenerateCharacter();
-                AddCharacterToRow(newCharacter);
+                newCharacter.GenerateCharacter();       // Без фиксированной редкости (случайный ролл)
+                AddCharacterToRow(newCharacter);        // Добавляем персонажа в ряд
             }
-
+            // Центрируем ряд персонажей
             CenterCharacterRow();
-
+            // Обновляем состояние кнопок
             UpdateRollButtonState();
             UpdateSummonFiveButtonState();
         }
@@ -101,7 +117,7 @@ public class GachaSystem : MonoBehaviour
             Debug.LogError("Недостаточно талонов или достигнут лимит персонажей!");
         }
     }
-
+    // Обновляем состояние кнопок
     private bool CanAddCharacters(int count)
     {
         return currentCharacters.Count + count <= maxCharactersInRow;
@@ -114,23 +130,23 @@ public class GachaSystem : MonoBehaviour
             Debug.LogError("Необходимо назначить CharacterRowItemPrefab и CharacterRowParent!");
             return;
         }
-
+        // Создаём новый элемент ряда
         GameObject rowItem = Instantiate(characterRowItemPrefab, characterRowParent);
 
         if (rowItem != null)
         {
             rowItem.GetComponent<CharacterRowItem>().SetCharacter(character, rowItem, OnAcceptCharacter, OnExchangeForDNA);
-            currentCharacters.Add(rowItem);
-
+            currentCharacters.Add(rowItem);   // Сохраняем ссылку на элемент ряда
+            // Добавляем анимированный фон для персонажа
             AddAnimatedBackground(rowItem, character.rarity);
         }
         else
         {
             Debug.LogError("Не удалось создать CharacterRowItem!");
         }
-
+        // Центрируем ряд после добавления персонажа
         CenterCharacterRow();
-
+        // Обновляем состояние кнопок
         UpdateRollButtonState();
         UpdateSummonFiveButtonState();
         UpdateAcceptAllButtonState();
@@ -138,6 +154,7 @@ public class GachaSystem : MonoBehaviour
         UpdateGetTicketsButtonState();
     }
 
+    // Метод для центрирования ряда персонажей
     private void CenterCharacterRow()
     {
         if (currentCharacters.Count == 0 || characterRowParent == null)
@@ -145,7 +162,7 @@ public class GachaSystem : MonoBehaviour
             Debug.LogWarning("Нет персонажей для центрирования!");
             return;
         }
-
+        // Ширина одного элемента = 150f
         float totalWidth = currentCharacters.Count * 150f;
         float offset = -(totalWidth / 2f);
 
@@ -161,7 +178,7 @@ public class GachaSystem : MonoBehaviour
             }
         }
     }
-
+    // Метод для принятия персонажа
     private void OnAcceptCharacter(GameObject rowItem)
     {
         if (rowItem == null)
@@ -176,17 +193,17 @@ public class GachaSystem : MonoBehaviour
             Debug.LogError("Не найден компонент CharacterRowItem!");
             return;
         }
-
-        SpawnCharacter(item.character);
-        RemoveCharacterFromRow(rowItem);
-
+        
+        SpawnCharacter(item.character); // Спавним персонажа на игровое поле
+        RemoveCharacterFromRow(rowItem);// Удаляем элемент из ряда
+        // Обновляем состояние кнопок
         UpdateRollButtonState();
         UpdateSummonFiveButtonState();
         UpdateAcceptAllButtonState();
         UpdateExchangeAllButtonState();
         UpdateGetTicketsButtonState();
     }
-
+    // Метод для обмена персонажа на ДНК
     private void OnExchangeForDNA(GameObject rowItem)
     {
         if (rowItem == null)
@@ -215,16 +232,16 @@ public class GachaSystem : MonoBehaviour
 
         dnaFragments += dnaAmount;
         UpdateDnaFragmentCount();
-
+        // Удаляем элемент из ряда
         RemoveCharacterFromRow(rowItem);
-
+        // Обновляем состояние кнопок
         UpdateRollButtonState();
         UpdateSummonFiveButtonState();
         UpdateAcceptAllButtonState();
         UpdateExchangeAllButtonState();
         UpdateGetTicketsButtonState();
     }
-
+    // Метод для удаления персонажа из ряда
     private void RemoveCharacterFromRow(GameObject rowItem)
     {
         if (rowItem == null)
@@ -232,25 +249,25 @@ public class GachaSystem : MonoBehaviour
             Debug.LogError("Попытка удалить null элемент из ряда!");
             return;
         }
-
+        // Находим дочерний объект с анимацией фона
         GameObject backgroundObject = rowItem.transform.Find("Background")?.gameObject;
         if (backgroundObject != null)
         {
-            Destroy(backgroundObject);
+            Destroy(backgroundObject);// Удаляем объект анимации фона
         }
 
         currentCharacters.Remove(rowItem);
         Destroy(rowItem);
-
+        // Перестраиваем ряд
         CenterCharacterRow();
-
+        // Обновляем состояние кнопок
         UpdateRollButtonState();
         UpdateSummonFiveButtonState();
         UpdateAcceptAllButtonState();
         UpdateExchangeAllButtonState();
         UpdateGetTicketsButtonState();
     }
-
+    // Метод для спавна персонажа
     public void SpawnCharacter(Character character)
     {
         if (characterPrefab == null || spawnPoint == null)
@@ -263,9 +280,9 @@ public class GachaSystem : MonoBehaviour
 
         if (characterObject != null)
         {
-            SpriteRenderer mainSpriteRenderer = characterObject.GetComponent<SpriteRenderer>();
+            SpriteRenderer mainSpriteRenderer = characterObject.GetComponent<SpriteRenderer>(); // Присваиваем основной спрайт
             mainSpriteRenderer.sprite = character.sprite;
-
+            // Добавляем анимированный фон для персонажа
             AddAnimatedBackground(characterObject, character.rarity);
 
             Debug.Log($"Вы приняли персонажа: {character.name} ({character.rarity})!");
@@ -275,7 +292,7 @@ public class GachaSystem : MonoBehaviour
             Debug.LogError("Не удалось создать CharacterPrefab!");
         }
     }
-
+    // Метод для добавления анимированного фона
     private void AddAnimatedBackground(GameObject parentObject, Rarity rarity)
     {
         if (parentObject == null)
@@ -283,21 +300,21 @@ public class GachaSystem : MonoBehaviour
             Debug.LogError("Переданный parentObject является null!");
             return;
         }
-
+        // Создаём объект для фона
         GameObject backgroundObject = new GameObject("Background");
         backgroundObject.transform.parent = parentObject.transform;
         backgroundObject.transform.localPosition = Vector3.zero;
-
+        // Создаём объект для фона
         SpriteRenderer backgroundRenderer = backgroundObject.AddComponent<SpriteRenderer>();
         backgroundRenderer.sprite = GetDefaultBackgroundSprite(rarity);
-
+        // Добавляем Animator
         Animator animator = backgroundObject.AddComponent<Animator>();
         SetAnimatorController(animator, rarity);
-
+        // Настройка размера фона
         backgroundRenderer.transform.localScale = new Vector3(1f, 1f, 0.5f);
         backgroundRenderer.sortingOrder = 0;
     }
-
+    // Метод для установки анимации фона
     private void SetAnimatorController(Animator animator, Rarity rarity)
     {
         if (animator == null)
