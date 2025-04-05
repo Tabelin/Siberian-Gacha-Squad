@@ -1585,14 +1585,42 @@ MonoBehaviour:
   rareController: {fileID: 9100000, guid: 868ef7196d616cc46ae680d5dfb1be87, type: 2}
   epicController: {fileID: 9100000, guid: 602e4d250fff8f3408510e69f5a3e584, type: 2}
   legendaryController: {fileID: 9100000, guid: b37d11e335d22bc4596c95c0902ce5bb, type: 2}
-  commonSprites:
+  commonCharacterSprites:
   - {fileID: -341896550, guid: d5253d5be69f3284085a02b7abd0f268, type: 3}
-  rareSprites:
+  rareCharacterSprites:
   - {fileID: 1605727934, guid: e5b0ad7832b36ab49af3e1b34dfa4519, type: 3}
-  epicSprites:
+  epicCharacterSprites:
   - {fileID: 1924912978, guid: e1be415ac7c830b418ccfc311307fe99, type: 3}
-  legendarySprites:
+  legendaryCharacterSprites:
   - {fileID: -917895784, guid: d9b4ce18992222243b95bef957d17ea5, type: 3}
+  commonBackgroundSprites:
+  - {fileID: 962255168, guid: 234bad1f3d1f93240b474e1a446753b5, type: 3}
+  - {fileID: 1360734424, guid: 234bad1f3d1f93240b474e1a446753b5, type: 3}
+  - {fileID: 49305926, guid: 234bad1f3d1f93240b474e1a446753b5, type: 3}
+  - {fileID: -1261309684, guid: 234bad1f3d1f93240b474e1a446753b5, type: 3}
+  - {fileID: -1428160048, guid: 234bad1f3d1f93240b474e1a446753b5, type: 3}
+  - {fileID: 1313097482, guid: 234bad1f3d1f93240b474e1a446753b5, type: 3}
+  rareBackgroundSprites:
+  - {fileID: -2012054278, guid: 8132cf76a44440e4ba32fcfc3760ac4f, type: 3}
+  - {fileID: 40642631, guid: 8132cf76a44440e4ba32fcfc3760ac4f, type: 3}
+  - {fileID: 357859144, guid: 8132cf76a44440e4ba32fcfc3760ac4f, type: 3}
+  - {fileID: -25028771, guid: 8132cf76a44440e4ba32fcfc3760ac4f, type: 3}
+  - {fileID: -1518896012, guid: 8132cf76a44440e4ba32fcfc3760ac4f, type: 3}
+  - {fileID: -284422801, guid: 8132cf76a44440e4ba32fcfc3760ac4f, type: 3}
+  epicBackgroundSprites:
+  - {fileID: 1910452249, guid: 01301e748363bc74ea45f7e39d600139, type: 3}
+  - {fileID: -1317345933, guid: 01301e748363bc74ea45f7e39d600139, type: 3}
+  - {fileID: 607024782, guid: 01301e748363bc74ea45f7e39d600139, type: 3}
+  - {fileID: -470095257, guid: 01301e748363bc74ea45f7e39d600139, type: 3}
+  - {fileID: -656125501, guid: 01301e748363bc74ea45f7e39d600139, type: 3}
+  - {fileID: -1872273710, guid: 01301e748363bc74ea45f7e39d600139, type: 3}
+  legendaryBackgroundSprites:
+  - {fileID: 242862206, guid: 3ae4ee1ffb529d54d98966cd46f32b1a, type: 3}
+  - {fileID: -870691478, guid: 3ae4ee1ffb529d54d98966cd46f32b1a, type: 3}
+  - {fileID: 1029986339, guid: 3ae4ee1ffb529d54d98966cd46f32b1a, type: 3}
+  - {fileID: -1712962948, guid: 3ae4ee1ffb529d54d98966cd46f32b1a, type: 3}
+  - {fileID: -1202646111, guid: 3ae4ee1ffb529d54d98966cd46f32b1a, type: 3}
+  - {fileID: 1242080210, guid: 3ae4ee1ffb529d54d98966cd46f32b1a, type: 3}
 --- !u!4 &843298113
 Transform:
   m_ObjectHideFlags: 0

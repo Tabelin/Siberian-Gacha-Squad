@@ -12,9 +12,9 @@ public class GachaSystem : MonoBehaviour
     public Transform spawnPoint;         // Точка спавна персонажа
     public Button rollButton;           // Кнопка для ролла гаче-машины
     public Button summonFiveButton;      // Кнопка для ролла гаче-машины
-    public Button acceptAllButton;      // Кнопка для принятия всех персонажей
+    public Button acceptAllButton;      // Кнопка для принятия всех персонажей 
     public Button exchangeAllButton;     // Кнопка для обмена всех персонажей на ДНК
-    public Button getTicketsButton;     // Кнопка для обмена всех персонажей на ДНК
+    public Button getTicketsButton;     // Кнопка для обмена всех персонажей на ДНК   CharacterImage не назначен
     // UI для отображения количества талонов
     public Image gachaTicketIcon;
     public Text gachaTicketCountText;
@@ -29,13 +29,20 @@ public class GachaSystem : MonoBehaviour
     public RuntimeAnimatorController rareController;
     public RuntimeAnimatorController epicController;
     public RuntimeAnimatorController legendaryController;
-    // Массивы спрайтов для каждой редкости
-    public Sprite[] commonSprites;
-    public Sprite[] rareSprites;
-    public Sprite[] epicSprites;
-    public Sprite[] legendarySprites;
+    // Массивы спрайтов для персонажей
+    public Sprite[] commonCharacterSprites; // Спрайты персонажей Common
+    public Sprite[] rareCharacterSprites;   // Спрайты персонажей Rare
+    public Sprite[] epicCharacterSprites;   // Спрайты персонажей Epic
+    public Sprite[] legendaryCharacterSprites; // Спрайты персонажей Legendary
+    // Новые массивы спрайтов для фонов
+    public Sprite[] commonBackgroundSprites; // Фоны для Common
+    public Sprite[] rareBackgroundSprites;   // Фоны для Rare
+    public Sprite[] epicBackgroundSprites;   // Фоны для Epic
+    public Sprite[] legendaryBackgroundSprites; // Фоны для Legendary
 
-    private List<GameObject> currentCharacters = new List<GameObject>();             // Список текущих элементов ряда
+    // Список сохранённых персонажей
+    public List<Character> currentCharacters = new List<Character>();
+    private List<GameObject> uiCharacters = new List<GameObject>();             // Список текущих элементов ряда
     private int gachaTickets = 10;                                                   // Количество талонов
     private int dnaFragments = 0;
     // Стоимость персонажей через ДНК
@@ -48,11 +55,19 @@ public class GachaSystem : MonoBehaviour
     };
 
     private const int maxCharactersInRow = 6;     // Стоимость персонажей через ДНК
+    
 
     void Awake()
     {
-        // Инициализируем Singleton
-        Instance = this;
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject); // Обеспечиваем доступность между сценами
+        }
+        else
+        {
+            Destroy(gameObject); // Уничтожаем дубликат объекта
+        }
     }
 
     void Start()
@@ -60,13 +75,13 @@ public class GachaSystem : MonoBehaviour
         if (characterRowItemPrefab == null || characterRowParent == null || spawnPoint == null ||
             rollButton == null || summonFiveButton == null || acceptAllButton == null ||
             exchangeAllButton == null || getTicketsButton == null ||
-            commonSprites == null || rareSprites == null || epicSprites == null || legendarySprites == null)
+            commonCharacterSprites == null || rareCharacterSprites == null || epicCharacterSprites == null || legendaryCharacterSprites == null)
         {
             Debug.LogError("Необходимо назначить все ссылки!");
             return;
         }
         // Проверяем, что массивы спрайтов не пустые
-        if (commonSprites.Length == 0 || rareSprites.Length == 0 || epicSprites.Length == 0 || legendarySprites.Length == 0)
+        if (commonCharacterSprites.Length == 0 || rareCharacterSprites.Length == 0 || epicCharacterSprites.Length == 0 || legendaryCharacterSprites.Length == 0)
         {
             Debug.LogError("Не все спрайты были добавлены в инспектор!");
             return;
@@ -74,13 +89,13 @@ public class GachaSystem : MonoBehaviour
         // Инициализируем словарь спрайтов в классе Character
         Character.spritesByRarity = new Dictionary<Rarity, Sprite[]>
         {
-            { Rarity.Common, commonSprites },
-            { Rarity.Rare, rareSprites },
-            { Rarity.Epic, epicSprites },
-            { Rarity.Legendary, legendarySprites }
+            { Rarity.Common, commonCharacterSprites },
+            { Rarity.Rare, rareCharacterSprites },
+            { Rarity.Epic, epicCharacterSprites },
+            { Rarity.Legendary, legendaryCharacterSprites }
         };
         // Инициализируем словарь спрайтов в классе Character
-        Character.defaultSprite = commonSprites.Length > 0 ? commonSprites[0] : null;
+        Character.defaultSprite = commonCharacterSprites.Length > 0 ? commonCharacterSprites[0] : null;
         // Обновляем текст талонов и ДНК
         UpdateGachaTicketCount();
         UpdateDnaFragmentCount();
@@ -90,6 +105,137 @@ public class GachaSystem : MonoBehaviour
         UpdateAcceptAllButtonState();
         UpdateExchangeAllButtonState();
         UpdateGetTicketsButtonState();
+        LoadCharacters(); // Загружаем сохранённых персонажей при старте
+    }
+
+    public Sprite GetBackgroundSprite(Rarity rarity)
+    {
+        return rarity switch
+        {
+            Rarity.Common => commonBackgroundSprites.Length > 0 ? commonBackgroundSprites[0] : null,
+            Rarity.Rare => rareBackgroundSprites.Length > 0 ? rareBackgroundSprites[0] : null,
+            Rarity.Epic => epicBackgroundSprites.Length > 0 ? epicBackgroundSprites[0] : null,
+            Rarity.Legendary => legendaryBackgroundSprites.Length > 0 ? legendaryBackgroundSprites[0] : null,
+            _ => null
+        };
+    }
+    // Метод для получения спрайта персонажа по редкости
+    public Sprite GetCharacterSprite(Rarity rarity)
+    {
+        return rarity switch
+        {
+            Rarity.Common => commonCharacterSprites.Length > 0 ? commonCharacterSprites[0] : null,
+            Rarity.Rare => rareCharacterSprites.Length > 0 ? rareCharacterSprites[0] : null,
+            Rarity.Epic => epicCharacterSprites.Length > 0 ? epicCharacterSprites[0] : null,
+            Rarity.Legendary => legendaryCharacterSprites.Length > 0 ? legendaryCharacterSprites[0] : null,
+            _ => null
+        };
+    }
+    // Метод для сохранения персонажей
+    public void SaveCharacters()
+    {
+        SaveData saveData = new SaveData();
+
+        foreach (Character character in currentCharacters)
+        {
+            CharacterData data = new CharacterData
+            {
+                name = character.name,
+                rarity = character.rarity,
+                health = character.health,
+                attack = character.attack,
+                defense = character.defense,
+                carryWeight = character.carryWeight,
+                level = character.level,
+                maxLevel = character.maxLevel,
+                isAccepted = true // Принятые персонажи помечаются как true
+            };
+            saveData.characters.Add(data);
+        }
+
+        // Сохраняем персонажей из UI-ряда
+        foreach (GameObject rowItem in uiCharacters)
+        {
+            CharacterRowItem item = rowItem.GetComponent<CharacterRowItem>();
+            if (item != null)
+            {
+                CharacterData data = new CharacterData
+                {
+                    name = item.character.name,
+                    rarity = item.character.rarity,
+                    health = item.character.health,
+                    attack = item.character.attack,
+                    defense = item.character.defense,
+                    carryWeight = item.character.carryWeight,
+                    level = item.character.level,
+                    maxLevel = item.character.maxLevel,
+                    isAccepted = false // Персонажи в UI-ряду помечаются как false
+                };
+                saveData.characters.Add(data);
+            }
+        }
+
+        // Сохраняем талоны и ДНК
+        saveData.gachaTickets = gachaTickets;
+        saveData.dnaFragments = dnaFragments;
+
+        string json = JsonUtility.ToJson(saveData);
+        PlayerPrefs.SetString("SaveData", json);
+
+        Debug.Log("Отряд, талоны и ДНК успешно сохранены!");
+    }
+
+    // Метод для загрузки отряда
+    public void LoadCharacters()
+    {
+        string json = PlayerPrefs.GetString("SaveData", "");
+        if (!string.IsNullOrEmpty(json))
+        {
+            SaveData saveData = JsonUtility.FromJson<SaveData>(json);
+
+            // Восстанавливаем принятых персонажей
+            foreach (CharacterData data in saveData.characters)
+            {
+                Character loadedCharacter = new Character
+                {
+                    name = data.name,
+                    rarity = data.rarity,
+                    health = data.health,
+                    attack = data.attack,
+                    defense = data.defense,
+                    carryWeight = data.carryWeight,
+                    level = data.level,
+                    maxLevel = data.maxLevel,
+                    sprite = GetCharacterSprite(data.rarity) // Восстанавливаем спрайт персонажа
+                };
+
+                // Если персонаж уже принят
+                if (data.isAccepted)
+                {
+                    currentCharacters.Add(loadedCharacter);
+                    Debug.Log($"Загружен принятый персонаж: {loadedCharacter.name} ({loadedCharacter.rarity})");
+                }
+                // Если персонаж ещё в UI-ряду
+                else
+                {
+                    AddCharacterToRowAndSetupUI(loadedCharacter); // Используем переименованный метод
+                    Debug.Log($"Загружен персонаж из UI-ряда: {loadedCharacter.name} ({loadedCharacter.rarity})");
+                }
+            }
+
+            // Восстанавливаем талоны и ДНК
+            gachaTickets = saveData.gachaTickets;
+            dnaFragments = saveData.dnaFragments;
+
+            UpdateGachaTicketCount();
+            UpdateDnaFragmentCount();
+            UpdateAcceptAllButtonState();
+            UpdateExchangeAllButtonState();
+        }
+        else
+        {
+            Debug.Log("Нет сохранённых данных.");
+        }
     }
     // Метод для выполнения ролла гаче
     public void RollGacha(int count = 1)
@@ -104,8 +250,9 @@ public class GachaSystem : MonoBehaviour
             {
                 Character newCharacter = new Character();
                 newCharacter.GenerateCharacter();       // Без фиксированной редкости (случайный ролл)
-                AddCharacterToRow(newCharacter);        // Добавляем персонажа в ряд
+                AddCharacterToRowAndSetupUI(newCharacter);        // Добавляем персонажа в ряд
             }
+            SaveCharacters();// Автоматически сохраняем отряд после ролла
             // Центрируем ряд персонажей
             CenterCharacterRow();
             // Обновляем состояние кнопок
@@ -120,10 +267,10 @@ public class GachaSystem : MonoBehaviour
     // Обновляем состояние кнопок
     private bool CanAddCharacters(int count)
     {
-        return currentCharacters.Count + count <= maxCharactersInRow;
+        return uiCharacters.Count + count <= maxCharactersInRow;
     }
-
-    private void AddCharacterToRow(Character character)
+    // Метод для добавления персонажа в UI-ряд
+    private void AddCharacterToRowAndSetupUI(Character character)
     {
         if (characterRowItemPrefab == null || characterRowParent == null)
         {
@@ -135,10 +282,24 @@ public class GachaSystem : MonoBehaviour
 
         if (rowItem != null)
         {
-            rowItem.GetComponent<CharacterRowItem>().SetCharacter(character, rowItem, OnAcceptCharacter, OnExchangeForDNA);
-            currentCharacters.Add(rowItem);   // Сохраняем ссылку на элемент ряда
-            // Добавляем анимированный фон для персонажа
-            AddAnimatedBackground(rowItem, character.rarity);
+            // Находим компонент CharacterRowItem
+            CharacterRowItem item = rowItem.GetComponent<CharacterRowItem>();
+            if (item != null)
+            {
+                // Устанавливаем данные персонажа
+                item.SetCharacter(character, rowItem, OnAcceptCharacter, OnExchangeForDNA);
+
+                // Явно устанавливаем спрайт фона
+                SetBackgroundSprite(rowItem, character.rarity);
+
+                // Добавляем объект в список uiCharacters
+                uiCharacters.Add(rowItem);
+            }
+            else
+            {
+                Debug.LogError("Не найден компонент CharacterRowItem!");
+            }
+
         }
         else
         {
@@ -157,24 +318,24 @@ public class GachaSystem : MonoBehaviour
     // Метод для центрирования ряда персонажей
     private void CenterCharacterRow()
     {
-        if (currentCharacters.Count == 0 || characterRowParent == null)
+        if (uiCharacters.Count == 0 || characterRowParent == null)
         {
             Debug.LogWarning("Нет персонажей для центрирования!");
             return;
         }
         // Ширина одного элемента = 150f
-        float totalWidth = currentCharacters.Count * 150f;
+        float totalWidth = uiCharacters.Count * 150f;
         float offset = -(totalWidth / 2f);
 
-        for (int i = 0; i < currentCharacters.Count; i++)
+        for (int i = 0; i < uiCharacters.Count; i++)
         {
-            if (currentCharacters[i] != null)
+            if (uiCharacters[i] != null)
             {
-                currentCharacters[i].transform.localPosition = new Vector3(offset + i * 150f, 0, 0);
+                uiCharacters[i].transform.localPosition = new Vector3(offset + i * 150f, 0, 0);
             }
             else
             {
-                Debug.LogError("Обнаружен null в списке currentCharacters!");
+                Debug.LogError("Обнаружен null в списке uiCharacters!");
             }
         }
     }
@@ -193,9 +354,13 @@ public class GachaSystem : MonoBehaviour
             Debug.LogError("Не найден компонент CharacterRowItem!");
             return;
         }
-        
+
+        currentCharacters.Add(item.character); // Добавляем персонажа в отряд
+        SaveCharacters(); // Сохраняем отряд после принятия персонажа
+
         SpawnCharacter(item.character); // Спавним персонажа на игровое поле
         RemoveCharacterFromRow(rowItem);// Удаляем элемент из ряда
+        
         // Обновляем состояние кнопок
         UpdateRollButtonState();
         UpdateSummonFiveButtonState();
@@ -232,6 +397,7 @@ public class GachaSystem : MonoBehaviour
 
         dnaFragments += dnaAmount;
         UpdateDnaFragmentCount();
+        SaveCharacters();
         // Удаляем элемент из ряда
         RemoveCharacterFromRow(rowItem);
         // Обновляем состояние кнопок
@@ -241,7 +407,7 @@ public class GachaSystem : MonoBehaviour
         UpdateExchangeAllButtonState();
         UpdateGetTicketsButtonState();
     }
-    // Метод для удаления персонажа из ряда
+    // Метод для удаления персонажа из UI-ряда
     private void RemoveCharacterFromRow(GameObject rowItem)
     {
         if (rowItem == null)
@@ -256,10 +422,12 @@ public class GachaSystem : MonoBehaviour
             Destroy(backgroundObject);// Удаляем объект анимации фона
         }
 
-        currentCharacters.Remove(rowItem);
+        uiCharacters.Remove(rowItem);
         Destroy(rowItem);
         // Перестраиваем ряд
         CenterCharacterRow();
+        SaveCharacters(); // Сохраняем отряд после удаления персонажа
+
         // Обновляем состояние кнопок
         UpdateRollButtonState();
         UpdateSummonFiveButtonState();
@@ -346,10 +514,10 @@ public class GachaSystem : MonoBehaviour
     {
         return rarity switch
         {
-            Rarity.Common => commonSprites.Length > 0 ? commonSprites[0] : null,
-            Rarity.Rare => rareSprites.Length > 0 ? rareSprites[0] : null,
-            Rarity.Epic => epicSprites.Length > 0 ? epicSprites[0] : null,
-            Rarity.Legendary => legendarySprites.Length > 0 ? legendarySprites[0] : null,
+            Rarity.Common => commonBackgroundSprites.Length > 0 ? commonBackgroundSprites[0] : null,
+            Rarity.Rare => rareBackgroundSprites.Length > 0 ? rareBackgroundSprites[0] : null,
+            Rarity.Epic => epicBackgroundSprites.Length > 0 ? epicBackgroundSprites[0] : null,
+            Rarity.Legendary => legendaryBackgroundSprites.Length > 0 ? legendaryBackgroundSprites[0] : null,
             _ => null
         };
     }
@@ -382,7 +550,7 @@ public class GachaSystem : MonoBehaviour
     {
         if (acceptAllButton != null)
         {
-            acceptAllButton.interactable = currentCharacters.Count > 0;
+            acceptAllButton.interactable = uiCharacters.Count > 0;
         }
         else
         {
@@ -394,7 +562,7 @@ public class GachaSystem : MonoBehaviour
     {
         if (exchangeAllButton != null)
         {
-            exchangeAllButton.interactable = currentCharacters.Count > 0;
+            exchangeAllButton.interactable = uiCharacters.Count > 0;
         }
         else
         {
@@ -440,11 +608,11 @@ public class GachaSystem : MonoBehaviour
 
     public void AcceptAllCharacters()
     {
-        foreach (GameObject rowItem in currentCharacters.ToArray())
+        foreach (GameObject rowItem in uiCharacters.ToArray())
         {
             OnAcceptCharacter(rowItem);
         }
-
+        SaveCharacters();
         // Обновляем состояние кнопок после действия
         UpdateRollButtonState();
         UpdateSummonFiveButtonState();
@@ -455,11 +623,11 @@ public class GachaSystem : MonoBehaviour
 
     public void ExchangeAllCharactersForDNA()
     {
-        foreach (GameObject rowItem in currentCharacters.ToArray())
+        foreach (GameObject rowItem in uiCharacters.ToArray())
         {
             OnExchangeForDNA(rowItem);
         }
-
+        SaveCharacters();
         // Обновляем состояние кнопок после действия
         UpdateRollButtonState();
         UpdateSummonFiveButtonState();
@@ -486,7 +654,8 @@ public class GachaSystem : MonoBehaviour
             guaranteedCharacter.rarity = rarity;
             guaranteedCharacter.GenerateCharacter(fixedRarity: rarity);
 
-            AddCharacterToRow(guaranteedCharacter);
+            AddCharacterToRowWithBackground(guaranteedCharacter);
+            SaveCharacters();
 
             Debug.Log($"Вы купили персонажа: {guaranteedCharacter.name} ({guaranteedCharacter.rarity})!");
         }
@@ -508,4 +677,76 @@ public class GachaSystem : MonoBehaviour
         UpdateRollButtonState();
         UpdateSummonFiveButtonState();
     }
+    // Метод для добавления персонажа в UI-ряд с правильным фоном
+    private void AddCharacterToRowWithBackground(Character character)
+    {
+        if (characterRowItemPrefab == null || characterRowParent == null)
+        {
+            Debug.LogError("Необходимо назначить CharacterRowItemPrefab и CharacterRowParent!");
+            return;
+        }
+
+        // Создаём элемент ряда
+        GameObject rowItem = Instantiate(characterRowItemPrefab, characterRowParent);
+
+        if (rowItem != null)
+        {
+            // Находим компонент CharacterRowItem
+            CharacterRowItem item = rowItem.GetComponent<CharacterRowItem>();
+            if (item != null)
+            {
+                // Устанавливаем данные персонажа
+                item.SetCharacter(character, rowItem, OnAcceptCharacter, OnExchangeForDNA);
+
+                // Явно устанавливаем спрайт фона
+                SetBackgroundSprite(rowItem, character.rarity);
+
+                // Добавляем объект в список uiCharacters
+                uiCharacters.Add(rowItem);
+            }
+            else
+            {
+                Debug.LogError("Не найден компонент CharacterRowItem!");
+            }
+        }
+        else
+        {
+            Debug.LogError("Не удалось создать CharacterRowItem!");
+        }
+
+        CenterCharacterRow();
+    }
+
+    
+
+    // Метод для установки спрайта фона
+    private void SetBackgroundSprite(GameObject rowItem, Rarity rarity)
+    {
+        if (rowItem == null)
+        {
+            Debug.LogError("Переданный rowItem является null!");
+            return;
+        }
+
+        // Находим компонент backgroundImage
+        Image backgroundImage = rowItem.transform.Find("BackgroundImage")?.GetComponent<Image>();
+        if (backgroundImage != null)
+        {
+            // Получаем спрайт фона из GachaSystem
+            Sprite backgroundSprite = GetBackgroundSprite(rarity);
+            if (backgroundSprite != null)
+            {
+                backgroundImage.sprite = backgroundSprite; // Устанавливаем спрайт фона
+            }
+            else
+            {
+                Debug.LogWarning($"Спрайт фона для редкости {rarity} не найден!");
+            }
+        }
+        else
+        {
+            Debug.LogError("BackgroundImage не назначен!");
+        }
+    }
+
 }

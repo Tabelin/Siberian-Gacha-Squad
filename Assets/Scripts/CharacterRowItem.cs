@@ -8,6 +8,7 @@ public class CharacterRowItem : MonoBehaviour
 {
     // Отображение информации о персонаже
     public Image characterImage; // Мини-спрайт персонажа
+    public Image backgroundImage; // Фоновая анимация
     public Text characterNameText; // Имя персонажа
     public Text rarityText; // Редкость персонажа
     public Text statsText; // Статы персонажа
@@ -16,8 +17,7 @@ public class CharacterRowItem : MonoBehaviour
     public Button acceptButton; // Принять персонажа
     public Button exchangeButton; // Обменять на ДНК
 
-    // Переменная для анимированного фона
-    public Image backgroundImage; // Фоновая анимация
+    
 
     // Массивы спрайтов для фона каждой редкости (добавляем сюда)
     public List<Sprite> commonBackgroundSprites = new List<Sprite>();
@@ -47,7 +47,6 @@ public class CharacterRowItem : MonoBehaviour
         if (characterImage != null)
         {
             characterImage.sprite = character.sprite; // Устанавливаем спрайт персонажа
-
         }
         else
         {
@@ -79,8 +78,8 @@ public class CharacterRowItem : MonoBehaviour
         else
         {
             Debug.LogWarning("StatsText не назначен!");
-        }
-        // Устанавливаем начальную прозрачность фона
+        }        // Устанавливаем начальную прозрачность фона
+
         Color currentColor = backgroundImage.color;
         backgroundImage.color = new Color(currentColor.r, currentColor.g, currentColor.b, 0.5f); // Alpha = 0.5 (50% прозрачности)
 
@@ -123,7 +122,7 @@ public class CharacterRowItem : MonoBehaviour
         }
 
         // Получаем соответствующие спрайты фона
-        List<Sprite> backgroundSprites = GetBackgroundSprites(rarity);
+        List<Sprite> backgroundSprites = GetBackgroundSpritesFromAtlas(rarity);
         if (backgroundSprites == null || backgroundSprites.Count == 0)
         {
             Debug.LogWarning($"Анимация фона для редкости {rarity} не найдена!");
@@ -140,15 +139,21 @@ public class CharacterRowItem : MonoBehaviour
         }
     }
 
-    // Метод для получения спрайтов фона по редкости
-    private List<Sprite> GetBackgroundSprites(Rarity rarity)
+    // Метод для получения спрайтов фона из атласа
+    private List<Sprite> GetBackgroundSpritesFromAtlas(Rarity rarity)
     {
+        if (GachaSystem.Instance == null)
+        {
+            Debug.LogError("GachaSystem не найден!");
+            return null;
+        }
+
         return rarity switch
         {
-            Rarity.Common => commonBackgroundSprites,
-            Rarity.Rare => rareBackgroundSprites,
-            Rarity.Epic => epicBackgroundSprites,
-            Rarity.Legendary => legendaryBackgroundSprites,
+            Rarity.Common => GachaSystem.Instance.commonBackgroundSprites.Length > 0 ? new List<Sprite>(GachaSystem.Instance.commonBackgroundSprites) : null,
+            Rarity.Rare => GachaSystem.Instance.rareBackgroundSprites.Length > 0 ? new List<Sprite>(GachaSystem.Instance.rareBackgroundSprites) : null,
+            Rarity.Epic => GachaSystem.Instance.epicBackgroundSprites.Length > 0 ? new List<Sprite>(GachaSystem.Instance.epicBackgroundSprites) : null,
+            Rarity.Legendary => GachaSystem.Instance.legendaryBackgroundSprites.Length > 0 ? new List<Sprite>(GachaSystem.Instance.legendaryBackgroundSprites) : null,
             _ => null
         };
     }
