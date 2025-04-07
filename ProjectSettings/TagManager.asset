@@ -5,6 +5,8 @@ TagManager:
   serializedVersion: 3
   tags:
   - SpawnPoint
+  - Character
+  - Item
   layers:
   - Default
   - TransparentFX
@@ -12,7 +14,7 @@ TagManager:
   - 
   - Water
   - UI
-  - 
+  - Ground
   - 
   - 
   - 
