@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class CharacterManager : MonoBehaviour
 {
@@ -31,6 +32,9 @@ public class CharacterManager : MonoBehaviour
 
     // Ближайший подбираемый предмет
     private GameObject nearestItem;
+
+    // Начальная точка спавна
+    private Transform spawnPoint;
 
     // Компонент NavMeshAgent для поиска пути
     private UnityEngine.AI.NavMeshAgent navMeshAgent;

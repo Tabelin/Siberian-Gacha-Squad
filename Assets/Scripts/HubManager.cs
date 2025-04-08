@@ -10,8 +10,11 @@ public class HubManager : MonoBehaviour
     // Префаб для персонажа
     public GameObject characterPrefab;
 
-    // Тег для точек спавна
-    public string spawnPointTag = "SpawnPoint";
+    // Радиус изменения позиции спавна
+    public float spawnRadius = 1f;
+
+    // Основная точка спавна (один спавн-поинт для всех)
+    public Transform mainSpawnPoint;
 
     // Атласы аниматоров для фонов
     public RuntimeAnimatorController commonBackgroundController;
@@ -51,48 +54,26 @@ public class HubManager : MonoBehaviour
 
     void Start()
     {
-        if (characterPrefab == null)
+        if (characterPrefab == null || mainSpawnPoint == null)
         {
-            Debug.LogError("Необходимо назначить CharacterPrefab!");
-            return;
-        }
-
-        // Находим все точки спавна по тегу
-        Transform[] spawnPoints = FindSpawnPoints();
-
-        if (spawnPoints.Length == 0)
-        {
-            Debug.LogWarning("Нет точек спавна в текущей сцене!");
+            Debug.LogError("Необходимо назначить CharacterPrefab и MainSpawnPoint!");
             return;
         }
 
         // Загружаем персонажей из SaveData
-        LoadCharactersFromSaveData(spawnPoints);
-    }
-
-    // Метод для поиска точек спавна
-    private Transform[] FindSpawnPoints()
-    {
-        List<Transform> spawnPoints = new List<Transform>();
-        foreach (GameObject obj in GameObject.FindGameObjectsWithTag(spawnPointTag))
-        {
-            spawnPoints.Add(obj.transform);
-        }
-
-        return spawnPoints.ToArray();
+        LoadCharactersFromSaveData();
     }
 
     // Метод для загрузки персонажей из SaveData
-    private void LoadCharactersFromSaveData(Transform[] spawnPoints)
+    private void LoadCharactersFromSaveData()
     {
         string json = PlayerPrefs.GetString("SaveData", "");
         if (!string.IsNullOrEmpty(json))
         {
             SaveData saveData = JsonUtility.FromJson<SaveData>(json);
 
-            for (int i = 0; i < saveData.characters.Count && i < spawnPoints.Length; i++)
+            foreach (CharacterData data in saveData.characters)
             {
-                CharacterData data = saveData.characters[i];
                 Character loadedCharacter = new Character
                 {
                     name = data.name,
@@ -108,7 +89,7 @@ public class HubManager : MonoBehaviour
 
                 if (data.isAccepted)
                 {
-                    SpawnCharacter(loadedCharacter, spawnPoints[i]);
+                    SpawnCharacter(loadedCharacter);
                 }
                 else
                 {
@@ -122,17 +103,21 @@ public class HubManager : MonoBehaviour
         }
     }
 
-    // Метод для спавна персонажа
-    private void SpawnCharacter(Character character, Transform spawnPoint)
+    // Метод для спавна персонажа с изменением позиции спавна
+    private void SpawnCharacter(Character character)
     {
-        if (characterPrefab == null || spawnPoint == null)
+        if (characterPrefab == null || mainSpawnPoint == null)
         {
-            Debug.LogError("Необходимо назначить CharacterPrefab или SpawnPoint!");
+            Debug.LogError("Необходимо назначить CharacterPrefab или MainSpawnPoint!");
             return;
         }
 
+        // Выбираем случайную позицию спавна в радиусе основной точки
+        Vector3 spawnPosition = mainSpawnPoint.position + Random.insideUnitSphere * spawnRadius;
+        spawnPosition.y = mainSpawnPoint.position.y; // Ограничиваем движение только по XZ
+
         // Создаём объект персонажа
-        GameObject characterObject = Instantiate(characterPrefab, spawnPoint.position, Quaternion.identity);
+        GameObject characterObject = Instantiate(characterPrefab, spawnPosition, Quaternion.identity);
 
         if (characterObject != null)
         {
@@ -160,6 +145,8 @@ public class HubManager : MonoBehaviour
             Debug.LogError("Не удалось создать CharacterPrefab!");
         }
     }
+
+
 
     // Метод для добавления анимированного фона через Animator
     private void AddAnimatedBackground(GameObject parentObject, Rarity rarity)
