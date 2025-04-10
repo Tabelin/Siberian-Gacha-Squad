@@ -22,10 +22,10 @@ public class CharacterManager : MonoBehaviour
     private Vector3 moveTarget;
 
     // Булевые переменные для состояний
-    public bool isPatrolling = false; // Патрулирование
+    public bool isPatrolling = true; // Патрулирование
     public bool isAttacking = false; // Атака
     public bool isGathering = false; // Добыча ресурсов
-    public bool isIdle = true; // Бездействие
+    public bool isIdle = false; // Бездействие
 
     // Корутина патрулирования
     private Coroutine patrolCoroutine;
@@ -39,6 +39,12 @@ public class CharacterManager : MonoBehaviour
     // Компонент NavMeshAgent для поиска пути
     private UnityEngine.AI.NavMeshAgent navMeshAgent;
 
+    // Компонент HealthSystem для здоровья персонажа
+    public HealthSystem healthSystem;
+
+    // Атакуемый объект
+    private GameObject attackTarget;
+
     void Start()
     {
         // Устанавливаем начальную точку патрулирования
@@ -49,6 +55,13 @@ public class CharacterManager : MonoBehaviour
         if (navMeshAgent == null)
         {
             Debug.LogError("Компонент NavMeshAgent не найден!");
+            return;
+        }
+        // Инициализируем систему здоровья
+        healthSystem = GetComponent<HealthSystem>();
+        if (healthSystem == null)
+        {
+            Debug.LogError("Компонент HealthSystem не найден!");
             return;
         }
 
@@ -62,9 +75,9 @@ public class CharacterManager : MonoBehaviour
 
     void Update()
     {
-        if (isAttacking)
+        if (isAttacking && attackTarget != null)
         {
-            Attack();
+            AttackTarget(attackTarget);
         }
         else if (isGathering)
         {
@@ -86,8 +99,10 @@ public class CharacterManager : MonoBehaviour
                 StartPatrolling();
             }
         }
-        else if (isPatrolling && moveTarget == Vector3.zero)
+        
+        if (isPatrolling && !isAttacking)
         {
+            DetectEnemies(); // Проверяем наличие врагов
             Patrol();
         }
         else if (isIdle || moveTarget == Vector3.zero)
@@ -95,6 +110,55 @@ public class CharacterManager : MonoBehaviour
             IdleControl(); // Управление при бездействии
         }
     }
+
+    // Метод для автоматического обнаружения врагов
+    private void DetectEnemies()
+    {
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy"); // Находим всех врагов
+        if (enemies.Length > 0)
+        {
+            GameObject closestEnemy = FindClosestEnemy(enemies); // Находим ближайшего врага
+            if (closestEnemy != null)
+            {
+                float distanceToEnemy = Vector3.Distance(transform.position, closestEnemy.transform.position);
+
+                if (distanceToEnemy <= 10f) // Если враг находится в пределах видимости (10 единиц)
+                {
+                    StartAttack(closestEnemy); // Начинаем атаку
+                }
+            }
+        }
+    }
+
+    // Метод для поиска ближайшего врага
+    private GameObject FindClosestEnemy(GameObject[] enemies)
+    {
+        GameObject closestEnemy = null;
+        float shortestDistance = Mathf.Infinity;
+
+        foreach (GameObject enemy in enemies)
+        {
+            float distance = Vector3.Distance(transform.position, enemy.transform.position);
+            if (distance < shortestDistance)
+            {
+                shortestDistance = distance;
+                closestEnemy = enemy;
+            }
+        }
+
+        return closestEnemy;
+    }
+
+    // Метод для получения урона
+    public void TakeDamage(float damage)
+    {
+        if (healthSystem != null && healthSystem.isAlive)
+        {
+            healthSystem.TakeDamage(damage); // Передаем урон в HealthSystem
+            Debug.Log($"Персонаж получил урон: {damage}. Осталось здоровья: {healthSystem.currentHealth}/{healthSystem.maxHealth}");
+        }
+    }
+
 
     // Метод для начала патрулирования
     public void StartPatrolling()
@@ -115,16 +179,111 @@ public class CharacterManager : MonoBehaviour
     }
 
     // Метод для начала атаки
-    public void StartAttack()
+    public void StartAttack(GameObject target)
     {
-        StopAllActions();
+        
+        {
+            StopAllActions();
 
-        isPatrolling = false;
-        isAttacking = true;
-        isGathering = false;
-        isIdle = false;
+            attackTarget = target;
+            isPatrolling = false;
+            isAttacking = true;
+            isGathering = false;
+            isIdle = false;
 
-        Debug.Log("Персонаж начинает атаковать!");
+            Debug.Log($"Персонаж атакует: {target.name}");
+
+            Attack(target);
+        }
+    }
+
+    // Метод для атаки
+    private void Attack(GameObject target)
+    {
+        StartCoroutine(AttackRoutine(target)); // Запускаем корутину атаки
+    }
+
+    // Корутина для атаки
+    private IEnumerator AttackRoutine(GameObject target)
+    {
+        while (isAttacking && target != null && target.activeInHierarchy)
+        {
+            if (Vector3.Distance(transform.position, target.transform.position) <= 2f)
+            {
+                PerformAttack(target); // Выполняем атаку, если достаточно близко
+            }
+            else
+            {
+                if (navMeshAgent != null)
+                {
+                    navMeshAgent.SetDestination(target.transform.position); // Двигаемся к цели
+                }
+            }
+
+            yield return new WaitForSeconds(2f); // Пауза между атаками
+        }
+
+        // После завершения атаки возобновляем патрулирование
+        StartPatrolling();
+    }
+
+    // Метод для выполнения атаки
+    private void PerformAttack(GameObject target)
+    {
+        Enemy enemy = target.GetComponent<Enemy>();
+        if (enemy != null && enemy.healthSystem != null && enemy.healthSystem.isAlive)
+        {
+            float damage = CalculateDamage(); // Вычисляем урон
+            enemy.healthSystem.TakeDamage(damage); // Отправляем урон врагу
+            Debug.Log($"Персонаж атакует! Нанесено урона: {damage}");
+        }
+    }
+
+    // Расчет урона на основе статов персонажа
+    private float CalculateDamage()
+    {
+        if (healthSystem == null)
+        {
+            Debug.LogError("Компонент HealthSystem не найден!");
+            return 20f;
+        }
+
+        // Используем атаку из HealthSystem
+        return healthSystem.attackPower; // Урон равен силе атаки персонажа
+    }
+
+    // Метод для атаки цели
+    private void AttackTarget(GameObject target)
+    {
+        if (target == null || !target.activeInHierarchy)
+        {
+            // Если цель недоступна, останавливаем атаку
+            StopAttack();
+            return;
+        }
+
+        float distanceToTarget = Vector3.Distance(transform.position, target.transform.position);
+
+        if (distanceToTarget > 2f)
+        {
+            // Если цель находится вне радиуса атаки, двигаемся к ней
+            if (navMeshAgent != null)
+            {
+                navMeshAgent.SetDestination(target.transform.position);
+            }
+        }
+        else
+        {
+            // Если достаточно близко, выполняем атаку
+            PerformAttack(target);
+        }
+    }
+
+    // Метод для остановки атаки
+    private void StopAttack()
+    {
+        attackTarget = null;
+        StartPatrolling(); // После окончания атаки возобновляем патрулирование
     }
 
     // Метод для начала добычи ресурсов
@@ -175,6 +334,7 @@ public class CharacterManager : MonoBehaviour
         StopPatrol();
         isAttacking = false;
         isGathering = false;
+
     }
 
     // Метод для остановки патрулирования
@@ -238,14 +398,6 @@ public class CharacterManager : MonoBehaviour
             navMeshAgent.isStopped = false; // Разрешаем движение
         }
     }
-
-    // Метод для атаки
-    private void Attack()
-    {
-        // Здесь можно добавить логику атаки (например, поиск врага)
-        Debug.Log("Персонаж атакует!");
-    }
-
     // Метод для добычи ресурсов
     private void Gather()
     {

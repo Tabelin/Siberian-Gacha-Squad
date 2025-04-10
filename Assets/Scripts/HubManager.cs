@@ -64,6 +64,33 @@ public class HubManager : MonoBehaviour
         LoadCharactersFromSaveData();
     }
 
+    // Метод для поиска ближайшего врага
+    private GameObject FindClosestEnemy()
+    {
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy"); // Находим всех врагов
+        if (enemies.Length == 0)
+        {
+            Debug.LogWarning("Враги не найдены!");
+            return null;
+        }
+
+        GameObject closestEnemy = null;
+        float shortestDistance = Mathf.Infinity;
+
+        foreach (GameObject enemy in enemies)
+        {
+            float distance = Vector3.Distance(transform.position, enemy.transform.position);
+            if (distance < shortestDistance)
+            {
+                shortestDistance = distance;
+                closestEnemy = enemy;
+            }
+        }
+
+        return closestEnemy; // Возвращаем ближайшего врага
+    }
+
+
     // Метод для загрузки персонажей из SaveData
     private void LoadCharactersFromSaveData()
     {
@@ -131,6 +158,18 @@ public class HubManager : MonoBehaviour
             {
                 Debug.LogError("SpriteRenderer не найден!");
             }
+
+            // Инициализируем систему здоровья
+            HealthSystem healthSystem = characterObject.GetComponent<HealthSystem>();
+            if (healthSystem != null)
+            {
+                healthSystem.maxHealth = character.health; // Устанавливаем максимальное здоровье из сохранения
+                healthSystem.currentHealth = character.health; // Устанавливаем текущее здоровье
+            }
+            else
+            {
+                Debug.LogError("Компонент HealthSystem не найден!");
+            } 
 
             // Добавляем анимированный фон
             AddAnimatedBackground(characterObject, character.rarity);
@@ -319,7 +358,15 @@ public class HubManager : MonoBehaviour
                         break;
 
                     case "Attack":
-                        manager.StartAttack();
+                        GameObject attackTarget = FindClosestEnemy(); // Находим ближайшего врага
+                        if (attackTarget != null)
+                        {
+                            manager.StartAttack(attackTarget); // Отправляем команду атаки с указанием цели
+                        }
+                        else
+                        {
+                            Debug.LogWarning("Ближайший враг не найден!");
+                        }
                         break;
 
                     case "Gather":
