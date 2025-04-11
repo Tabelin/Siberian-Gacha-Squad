@@ -11,7 +11,7 @@ public class HubManager : MonoBehaviour
     public GameObject characterPrefab;
 
     // Радиус изменения позиции спавна
-    public float spawnRadius = 1f;
+    public float spawnRadius = 2f;
 
     // Основная точка спавна (один спавн-поинт для всех)
     public Transform mainSpawnPoint;
@@ -163,8 +163,14 @@ public class HubManager : MonoBehaviour
             HealthSystem healthSystem = characterObject.GetComponent<HealthSystem>();
             if (healthSystem != null)
             {
-                healthSystem.maxHealth = character.health; // Устанавливаем максимальное здоровье из сохранения
-                healthSystem.currentHealth = character.health; // Устанавливаем текущее здоровье
+                healthSystem.InitializeHealth(
+                     initialMaxHealth: character.health,
+                     initialCurrentHealth: character.health,
+                     initialAttackPower: character.attack,
+                     initialDefense: character.defense,
+                     initialLevel: character.level,
+                     name: character.name // Передаем имя персонажа из сохранения
+                 );
             }
             else
             {

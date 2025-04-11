@@ -65,12 +65,28 @@ public class EnemySpawner : MonoBehaviour
                     continue; // Пропускаем этот врага
                 }
 
-                // Получаем компонент HealthSystem
+                // Инициализируем HealthSystem врага
                 HealthSystem healthSystem = enemyObject.GetComponent<HealthSystem>();
-                if (healthSystem == null)
+                if (healthSystem != null)
                 {
-                    Debug.LogError($"Компонент HealthSystem не найден на объекте {enemyObject.name}!");
-                    continue; // Пропускаем этот врага
+                    int enemyLevel = Random.Range(1, 10); // Генерируем случайный уровень врага
+                    float enemyHealth = 100f + enemyLevel * 30f; // Примерная формула для здоровья
+                    float enemyAttackPower = 10f + enemyLevel * 5f; // Примерная формула для атаки
+                    float enemyDefense = 5f + enemyLevel * 2f; // Примерная формула для защиты
+
+                    // Инициализируем HealthSystem с параметром name = "Enemy"
+                    healthSystem.InitializeHealth(
+                        initialMaxHealth: enemyHealth,
+                        initialCurrentHealth: enemyHealth,
+                        initialAttackPower: enemyAttackPower,
+                        initialDefense: enemyDefense,
+                        initialLevel: enemyLevel,
+                        name: "Enemy" // Передаем стандартное имя "Enemy"
+                    );
+                }
+                else
+                {
+                    Debug.LogError("Компонент HealthSystem не найден!");
                 }
 
                 // Инициализируем врага

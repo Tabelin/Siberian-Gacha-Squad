@@ -9,6 +9,11 @@ public class Enemy : MonoBehaviour
     // Радиус патрулирования
     public float patrolRadius = 2f;
     private float moveSpeed = 2f;
+
+    // Таймер между атаками
+    private float attackCooldown = 2f; // Фиксированное время между атаками (в секундах)
+    private float nextAttackTime = 0f; // Время следующей атаки
+
     // Центральная точка патрулирования
     private Vector3 patrolCenter;
 
@@ -65,22 +70,59 @@ public class Enemy : MonoBehaviour
 
     void Update()
     {
-        if (isPatrolling)
+        if (isPatrolling && !isAttacking)
         {
+            DetectCharacters(); // Проверяем наличие персонажей
             Patrol();
         }
         else if (isAttacking && attackTarget != null)
         {
-            AttackTarget(attackTarget);
+            AttackLogic(); // Вызываем логику атаки
         }
         else if (isIdle)
         {
-            IdleControl();
+            
+            StartPatrolling();
         }
-        // Обнаруживаем персонажей для атаки
-        DetectCharacters();
+        else if(isPatrolling)
+        {
+            Patrol();
+        }
         // Поворачиваем врага к камере
         AlignToCamera();
+    }
+
+    // Единый метод для логики атаки
+    private void AttackLogic()
+    {
+        if (attackTarget == null || !attackTarget.activeInHierarchy)
+        {
+            // Если цель недоступна, останавливаем атаку
+            StopAttack();
+            return;
+        }
+
+        float distanceToTarget = Vector3.Distance(transform.position, attackTarget.transform.position);
+
+        if (distanceToTarget > 2.5f)
+        {
+            // Если цель находится вне радиуса атаки, двигаемся к ней
+            if (navMeshAgent != null)
+            {
+                navMeshAgent.SetDestination(attackTarget.transform.position);
+            }
+        }
+        else
+        {
+            // Если достаточно близко, выполняем атаку с учетом таймера
+            if (Time.time >= nextAttackTime)
+            {
+                PerformAttack(attackTarget);
+
+                // Обновляем время следующей атаки
+                nextAttackTime = Time.time + attackCooldown;
+            }
+        }
     }
 
     // Метод для начала патрулирования
@@ -97,29 +139,6 @@ public class Enemy : MonoBehaviour
         });
     }
 
-    // Метод для атаки цели
-    private void AttackTarget(GameObject target)
-    {
-        if (target == null || !target.activeInHierarchy)
-        {
-            // Если цель недоступна, останавливаем атаку
-            StopAttack();
-            return;
-        }
-
-        float distanceToTarget = Vector3.Distance(transform.position, target.transform.position);
-
-        if (distanceToTarget > 2f)
-        {
-            // Если цель находится вне радиуса атаки, двигаемся к ней
-            navMeshAgent.SetDestination(target.transform.position);
-        }
-        else
-        {
-            // Если достаточно близко, выполняем атаку
-            PerformAttack(target);
-        }
-    }
 
     // Корутина для патрулирования
     private IEnumerator PatrolRoutine()
@@ -169,10 +188,19 @@ public class Enemy : MonoBehaviour
         CharacterManager characterManager = target.GetComponent<CharacterManager>();
         if (characterManager != null && characterManager.healthSystem != null && characterManager.healthSystem.isAlive)
         {
-            float damage = baseAttackPower + level * 5f; // Урон в зависимости от уровня
-            characterManager.TakeDamage(damage); // Отправляем урон персонажу
+            float damage = CalculateDamage(); // Вычисляем урон
+            characterManager.healthSystem.TakeDamage(damage); // Отправляем урон в HealthSystem персонажа
             Debug.Log($"Враг атакует! Нанесено урона: {damage}");
+
+            // Ждём перед следующей атакой
+            StartCoroutine(WaitBeforeNextAttack(4f));
         }
+    }
+
+    // Корутина для паузы между атаками
+    private IEnumerator WaitBeforeNextAttack(float waitTime)
+    {
+        yield return new WaitForSeconds(30000000f); // Пауза между атаками
     }
 
     // Метод для бездействия
@@ -203,28 +231,52 @@ public class Enemy : MonoBehaviour
             Vector3 direction = (Camera.main.transform.position - transform.position).normalized;
             float angleY = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
 
-            Quaternion targetRotation = Quaternion.Euler(0f, angleY, 0f);
+            Quaternion targetRotation = Quaternion.Euler(-15f, angleY, 0f);
             transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * 5f);
         }
     }
 
-    // Метод для обнаружения персонажей
+    // Метод для автоматического обнаружения персонажей
     private void DetectCharacters()
     {
-        GameObject[] characters = GameObject.FindGameObjectsWithTag("Character");
-        foreach (GameObject character in characters)
+        GameObject[] characters = GameObject.FindGameObjectsWithTag("Character"); // Находим всех персонажей
+        if (characters.Length > 0)
         {
-            CharacterManager characterManager = character.GetComponent<CharacterManager>();
-            if (characterManager != null && characterManager.healthSystem != null && characterManager.healthSystem.isAlive)
+            GameObject closestCharacter = FindClosestCharacter(characters); // Находим ближайшего персонажа
+            if (closestCharacter != null)
             {
-                float distanceToCharacter = Vector3.Distance(transform.position, character.transform.position);
-                if (distanceToCharacter < 10f) // Если персонаж находится в пределах видимости
+                float distanceToCharacter = Vector3.Distance(transform.position, closestCharacter.transform.position);
+
+                if (distanceToCharacter <= 10f && !isAttacking) // Если персонаж в пределах видимости (10 единиц) и враг не атакует
                 {
-                    StartAttack(character); // Начинаем атаку
-                    break;
+                    isPatrolling = false;
+                    isAttacking = true;
+                    isIdle = false;
+
+                    attackTarget = closestCharacter;
+                    Debug.Log($"Враг начал атаковать: {closestCharacter.name}");
                 }
             }
         }
+    }
+
+    // Метод для поиска ближайшего персонажа
+    private GameObject FindClosestCharacter(GameObject[] characters)
+    {
+        GameObject closestCharacter = null;
+        float shortestDistance = Mathf.Infinity;
+
+        foreach (GameObject character in characters)
+        {
+            float distance = Vector3.Distance(transform.position, character.transform.position);
+            if (distance < shortestDistance)
+            {
+                shortestDistance = distance;
+                closestCharacter = character;
+            }
+        }
+
+        return closestCharacter;
     }
 
     // Метод для начала атаки
@@ -243,8 +295,14 @@ public class Enemy : MonoBehaviour
     // Метод для остановки атаки
     private void StopAttack()
     {
+        isAttacking = false;
         attackTarget = null;
-        StartPatrolling(); // После окончания атаки возобновляем патрулирование
+
+        if (isPatrolling)
+        {
+            StartPatrolling(); // После окончания атаки возобновляем патрулирование
+        }
+        
     }
 
     // Метод для остановки всех действий
@@ -305,7 +363,6 @@ public class Enemy : MonoBehaviour
             return 0f;
         }
 
-        // Используем атаку из HealthSystem
         return healthSystem.attackPower; // Урон равен силе атаки врага
     }
 }
