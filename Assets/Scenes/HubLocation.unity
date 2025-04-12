@@ -1465,7 +1465,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyPrefab: {fileID: 8059109655280088047, guid: 1d74de9ebb25c10419970d96792d27a1, type: 3}
   spawnPointTag: EnemySpawnPoint
-  spawnCountPerPoint: 4
+  spawnCountPerPoint: 9
+  minEnemyLevel: 1
+  maxEnemyLevel: 5
 --- !u!4 &2084288107
 Transform:
   m_ObjectHideFlags: 0
@@ -1475,7 +1477,7 @@ Transform:
   m_GameObject: {fileID: 2084288105}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 25.4, y: -1.12, z: -26.02}
+  m_LocalPosition: {x: 20.75, y: -1.12, z: -25.75}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

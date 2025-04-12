@@ -7,12 +7,29 @@ public class Enemy : MonoBehaviour
 {
 
     // Радиус патрулирования
-    public float patrolRadius = 2f;
-    private float moveSpeed = 2f;
+    public float patrolRadius = 3f;
+    private float moveSpeed = 4f;
 
     // Таймер между атаками
     private float attackCooldown = 2f; // Фиксированное время между атаками (в секундах)
     private float nextAttackTime = 0f; // Время следующей атаки
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // Центральная точка патрулирования
     private Vector3 patrolCenter;
@@ -201,7 +218,7 @@ public class Enemy : MonoBehaviour
     // Корутина для паузы между атаками
     private IEnumerator WaitBeforeNextAttack(float waitTime)
     {
-        yield return new WaitForSeconds(30000000f); // Пауза между атаками
+        yield return new WaitForSeconds(waitTime); // Пауза между атаками
     }
 
     // Метод для бездействия
@@ -248,7 +265,7 @@ public class Enemy : MonoBehaviour
             {
                 float distanceToCharacter = Vector3.Distance(transform.position, closestCharacter.transform.position);
 
-                if (distanceToCharacter <= 10f && !isAttacking) // Если персонаж в пределах видимости (10 единиц) и враг не атакует
+                if (distanceToCharacter <= 16f && !isAttacking) // Если персонаж в пределах видимости (10 единиц) и враг не атакует
                 {
                     isPatrolling = false;
                     isAttacking = true;

@@ -14,6 +14,11 @@ public class EnemySpawner : MonoBehaviour
     //  оличество врагов дл€ спавна в каждой точке
     public int spawnCountPerPoint = 1; // ƒобавл€ем возможность измен€ть количество спавненных врагов
 
+    // ћинимальный уровень врагов
+    public int minEnemyLevel = 1;
+
+    // ћаксимальный уровень врагов
+    public int maxEnemyLevel = 5;
 
     // —писок спавненных врагов
     private List<GameObject> spawnedEnemies = new List<GameObject>();
@@ -67,7 +72,7 @@ public class EnemySpawner : MonoBehaviour
                     HealthSystem healthSystem = enemyObject.GetComponent<HealthSystem>();
                     if (healthSystem != null)
                     {
-                        int enemyLevel = Random.Range(1, 6); // √енерируем случайный уровень врага
+                        int enemyLevel = Random.Range(minEnemyLevel, maxEnemyLevel + 1); // √енерируем случайный уровень врага
 
                         // ¬ычисл€ем статы в зависимости от уровн€
                         float enemyHealth = 100f + enemyLevel * 50f;
