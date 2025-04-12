@@ -87,6 +87,12 @@ public class CharacterManager : MonoBehaviour
         {
             AttackLogic(); // Вызываем единую логику атаки
         }
+        else if (isAttacking && attackTarget == null)
+        {
+            StopAttack();
+
+            StartPatrolling();
+        }
         else if (moveTarget != Vector3.zero)
         {
             MoveToTarget(moveTarget);
@@ -103,7 +109,6 @@ public class CharacterManager : MonoBehaviour
         }
         else if (isIdle)
         {
-            IdleControl();
             StartPatrolling();
         }
     }

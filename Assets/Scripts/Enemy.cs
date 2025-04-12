@@ -26,7 +26,7 @@ public class Enemy : MonoBehaviour
     // Булевые переменные для состояний
     public bool isPatrolling = false; // Патрулирование
     public bool isAttacking = false; // Атака
-    public bool isIdle = true;      // Бездействие
+    
 
     // Базовые параметры врага
     public int level = 1;          // Уровень врага
@@ -79,8 +79,9 @@ public class Enemy : MonoBehaviour
         {
             AttackLogic(); // Вызываем логику атаки
         }
-        else if (isIdle)
+        else if (isAttacking && attackTarget == null)
         {
+            StopAttack();
             
             StartPatrolling();
         }
@@ -132,7 +133,7 @@ public class Enemy : MonoBehaviour
         {
             isPatrolling = true;
             isAttacking = false;
-            isIdle = false;
+            
 
             StartCoroutine(PatrolRoutine());
             Debug.Log("Враг начинает патрулирование!");
@@ -251,7 +252,7 @@ public class Enemy : MonoBehaviour
                 {
                     isPatrolling = false;
                     isAttacking = true;
-                    isIdle = false;
+                    
 
                     attackTarget = closestCharacter;
                     Debug.Log($"Враг начал атаковать: {closestCharacter.name}");
@@ -286,7 +287,7 @@ public class Enemy : MonoBehaviour
         {
             isPatrolling = false;
             isAttacking = true;
-            isIdle = false;
+           
 
             Debug.Log("Враг начинает атаковать!");
         });
@@ -315,7 +316,7 @@ public class Enemy : MonoBehaviour
 
         isPatrolling = false;
         isAttacking = false;
-        isIdle = true;
+        
     }
     // Метод для инициализации параметров врага
     public void Initialize(int enemyLevel)

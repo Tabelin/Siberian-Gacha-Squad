@@ -11,6 +11,10 @@ public class EnemySpawner : MonoBehaviour
     // Тег для точек спавна врагов
     public string spawnPointTag = "EnemySpawnPoint";
 
+    // Количество врагов для спавна в каждой точке
+    public int spawnCountPerPoint = 1; // Добавляем возможность изменять количество спавненных врагов
+
+
     // Список спавненных врагов
     private List<GameObject> spawnedEnemies = new List<GameObject>();
 
@@ -52,61 +56,51 @@ public class EnemySpawner : MonoBehaviour
     {
         foreach (Transform spawnPoint in spawnPoints)
         {
-            // Создаем объект врага
-            GameObject enemyObject = Instantiate(enemyPrefab, spawnPoint.position, Quaternion.identity);
-
-            if (enemyObject != null)
+            for (int i = 0; i < spawnCountPerPoint; i++) // Создаем указанное количество врагов на каждой точке
             {
-                // Получаем компонент Enemy
-                Enemy enemy = enemyObject.GetComponent<Enemy>();
-                if (enemy == null)
-                {
-                    Debug.LogError($"Компонент Enemy не найден на объекте {enemyObject.name}!");
-                    continue; // Пропускаем этот врага
-                }
+                // Создаем объект врага
+                GameObject enemyObject = Instantiate(enemyPrefab, spawnPoint.position, Quaternion.identity);
 
-                // Инициализируем HealthSystem врага
-                HealthSystem healthSystem = enemyObject.GetComponent<HealthSystem>();
-                if (healthSystem != null)
+                if (enemyObject != null)
                 {
-                    int enemyLevel = Random.Range(1, 10); // Генерируем случайный уровень врага
-                    float enemyHealth = 100f + enemyLevel * 30f; // Примерная формула для здоровья
-                    float enemyAttackPower = 10f + enemyLevel * 5f; // Примерная формула для атаки
-                    float enemyDefense = 5f + enemyLevel * 2f; // Примерная формула для защиты
+                    // Инициализируем HealthSystem врага
+                    HealthSystem healthSystem = enemyObject.GetComponent<HealthSystem>();
+                    if (healthSystem != null)
+                    {
+                        int enemyLevel = Random.Range(1, 6); // Генерируем случайный уровень врага
 
-                    // Инициализируем HealthSystem с параметром name = "Enemy"
-                    healthSystem.InitializeHealth(
-                        initialMaxHealth: enemyHealth,
-                        initialCurrentHealth: enemyHealth,
-                        initialAttackPower: enemyAttackPower,
-                        initialDefense: enemyDefense,
-                        initialLevel: enemyLevel,
-                        name: "Enemy" // Передаем стандартное имя "Enemy"
-                    );
+                        // Вычисляем статы в зависимости от уровня
+                        float enemyHealth = 100f + enemyLevel * 50f;
+                        float enemyAttackPower = 10f + enemyLevel * 5f;
+                        float enemyDefense = 5f + enemyLevel * 2f;
+
+                        // Инициализируем HealthSystem с параметром name = "Enemy"
+                        healthSystem.InitializeHealth(
+                            initialMaxHealth: enemyHealth,
+                            initialCurrentHealth: enemyHealth,
+                            initialAttackPower: enemyAttackPower,
+                            initialDefense: enemyDefense,
+                            initialLevel: enemyLevel,
+                            name: "Enemy"
+                        );
+
+                        Debug.Log($"Враг уровня {enemyLevel} создан: Здоровье - {enemyHealth}, Атака - {enemyAttackPower}, Защита - {enemyDefense}");
+                    }
+                    else
+                    {
+                        Debug.LogError("Компонент HealthSystem не найден!");
+                    }
+
+                    // Сохраняем ссылку на спавненного врага
+                    spawnedEnemies.Add(enemyObject);
                 }
                 else
                 {
-                    Debug.LogError("Компонент HealthSystem не найден!");
+                    Debug.LogError("Не удалось создать EnemyPrefab!");
                 }
-
-                // Инициализируем врага
-                try
-                {
-                    enemy.Initialize(1); // Уровень врага (можно изменить)
-                    Debug.Log($"Враг успешно спавнится в точке {spawnPoint.position}!");
-                }
-                catch (System.Exception ex)
-                {
-                    Debug.LogError($"Ошибка при инициализации врага: {ex.Message}");
-                }
-
-                // Сохраняем ссылку на спавненного врага
-                spawnedEnemies.Add(enemyObject);
-            }
-            else
-            {
-                Debug.LogError("Не удалось создать EnemyPrefab!");
             }
         }
+
+        Debug.Log($"Всего спавнено врагов: {spawnedEnemies.Count}");
     }
 }
