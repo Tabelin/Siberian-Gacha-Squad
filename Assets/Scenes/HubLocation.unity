@@ -1465,9 +1465,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyPrefab: {fileID: 8059109655280088047, guid: 1d74de9ebb25c10419970d96792d27a1, type: 3}
   spawnPointTag: EnemySpawnPoint
-  spawnCountPerPoint: 9
+  spawnCountPerPoint: 2
   minEnemyLevel: 1
-  maxEnemyLevel: 5
+  maxEnemyLevel: 1
 --- !u!4 &2084288107
 Transform:
   m_ObjectHideFlags: 0
