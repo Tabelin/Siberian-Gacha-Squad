@@ -94,10 +94,10 @@ public class HubManager : MonoBehaviour
     // Метод для загрузки персонажей из SaveData
     private void LoadCharactersFromSaveData()
     {
-        string json = PlayerPrefs.GetString("SaveData", "");
+        string json = PlayerPrefs.GetString("SaveData", "");  //PlayerPrefs.GetString() 
         if (!string.IsNullOrEmpty(json))
         {
-            SaveData saveData = JsonUtility.FromJson<SaveData>(json);
+            SaveData saveData = JsonUtility.FromJson<SaveData>(json); //JsonUtility.FromJson<SaveData>(json)
 
             foreach (CharacterData data in saveData.characters)
             {
@@ -169,6 +169,7 @@ public class HubManager : MonoBehaviour
                      initialAttackPower: character.attack,
                      initialDefense: character.defense,
                      initialLevel: character.level,
+                     initialMaxLevel: character.maxLevel, // Добавлено!
                      name: character.name // Передаем имя персонажа из сохранения
                  );
             }

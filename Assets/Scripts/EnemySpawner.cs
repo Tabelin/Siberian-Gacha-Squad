@@ -20,6 +20,9 @@ public class EnemySpawner : MonoBehaviour
     // Максимальный уровень врагов
     public int maxEnemyLevel = 5;
 
+    // Фиксированный максимальный уровень для врагов (добавьте это!)
+    public int enemyMaxLevel = 10;
+
     // Список спавненных врагов
     private List<GameObject> spawnedEnemies = new List<GameObject>();
 
@@ -86,6 +89,7 @@ public class EnemySpawner : MonoBehaviour
                             initialAttackPower: enemyAttackPower,
                             initialDefense: enemyDefense,
                             initialLevel: enemyLevel,
+                            initialMaxLevel: enemyMaxLevel, 
                             name: "Enemy"
                         );
 

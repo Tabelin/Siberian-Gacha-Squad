@@ -22,6 +22,14 @@ public class CharacterData
     public int level;
     public int maxLevel;
 
-    // Новое поле: указывает, был ли персонаж принят
+    // поле указывает, был ли персонаж принят или еще находится в ряду персонажей
     public bool isAccepted;
 }
+
+
+
+
+
+
+
+
