@@ -261,17 +261,11 @@ public class HealthSystem : MonoBehaviour
     // Метод для показа попапа опыта
     private void ShowExperiencePopup(float exp)
     {
-        if (experiencePopup == null) return;
+        Text expClone = Instantiate(experiencePopup, experiencePopup.transform.parent);
+        expClone.text = $"+{exp:F0} XP";
+        expClone.color = Color.yellow;
 
-        experiencePopup.text = $"+{exp:F0} XP"; // Например: "+50 XP"
-        experiencePopup.color = Color.green;
-        experiencePopup.gameObject.SetActive(true);
-
-        // Позиция над персонажем
-        experiencePopup.transform.position = transform.position + new Vector3(0f, 0f, 0f);
-
-
-        StartCoroutine(MovePopupUpAndHide(experiencePopup));
+        StartCoroutine(MovePopupUpAndDestroy(expClone));
     }
 
     private void LevelUp()
@@ -306,13 +300,11 @@ public class HealthSystem : MonoBehaviour
     // Метод для показа попапа уровня
     private void ShowLevelUpPopup()
     {
-        if (levelPopup == null) return;
+        Text levelClone = Instantiate(levelPopup, levelPopup.transform.parent);
+        levelClone.text = $"Level {level}!";
+        levelClone.color = Color.green;
 
-        levelPopup.text = $"Level {level}!";
-        levelPopup.color = Color.green;
-        levelPopup.gameObject.SetActive(true);
-
-        StartCoroutine(MovePopupUpAndHide(levelPopup)); // Передаём levelPopup
+        StartCoroutine(MovePopupUpAndDestroy(levelClone));
     }
 
     // Корутина для движения попапа вверх и скрытия
@@ -364,18 +356,30 @@ public class HealthSystem : MonoBehaviour
     // Метод для показа урона
     private void ShowDamageNumbers(float damage)
     {
-        if (damagePopup != null)
+        if (damagePopup == null) return;
+
+        // Клонируем Text из Canvas
+        Text damageClone = Instantiate(damagePopup, damagePopup.transform.parent);
+        damageClone.text = $"-{damage}";
+        damageClone.color = Color.red;
+
+        // Движение вверх через корутину
+        StartCoroutine(MovePopupUpAndDestroy(damageClone));
+    }
+
+    private IEnumerator MovePopupUpAndDestroy(Text popup)
+    {
+        float duration = 1f;
+        Vector3 startPosition = popup.transform.position;
+
+        for (float t = 0f; t < duration; t += Time.deltaTime)
         {
-            damagePopup.text = damage.ToString();
-            damagePopup.color = Color.red;
-            damagePopup.gameObject.SetActive(true); // Показываем попап
-
-            // Позиция над персонажем
-            damagePopup.transform.position = transform.position + new Vector3(0f, 0f, 0f);
-
-
-            StartCoroutine(MovePopupUpAndHide(damagePopup));
+            float movement = Mathf.Sin(t / duration * Mathf.PI * 0.5f) * 2f;
+            popup.transform.position = startPosition + Vector3.up * movement;
+            yield return null;
         }
+
+        Destroy(popup.gameObject);
     }
 
     // Метод для скрытия попапа (через корутину)

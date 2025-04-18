@@ -1467,7 +1467,7 @@ MonoBehaviour:
   spawnPointTag: EnemySpawnPoint
   spawnCountPerPoint: 6
   minEnemyLevel: 1
-  maxEnemyLevel: 20
+  maxEnemyLevel: 1
   enemyMaxLevel: 92
 --- !u!4 &2084288107
 Transform:
