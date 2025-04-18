@@ -111,7 +111,11 @@ public class HubManager : MonoBehaviour
                     carryWeight = data.carryWeight,
                     level = data.level,
                     maxLevel = data.maxLevel,
+                    experience = data.experience,
+                    experienceToNextLevel = data.experienceToNextLevel,
+
                     sprite = GetCharacterSprite(data.rarity) // Получаем спрайт персонажа
+
                 };
 
                 if (data.isAccepted)
@@ -164,14 +168,16 @@ public class HubManager : MonoBehaviour
             if (healthSystem != null)
             {
                 healthSystem.InitializeHealth(
-                     initialMaxHealth: character.health,
-                     initialCurrentHealth: character.health,
-                     initialAttackPower: character.attack,
-                     initialDefense: character.defense,
-                     initialLevel: character.level,
-                     initialMaxLevel: character.maxLevel, // Добавлено!
-                     name: character.name // Передаем имя персонажа из сохранения
-                 );
+                    initialMaxHealth: character.health,
+                    initialCurrentHealth: character.health,
+                    initialAttackPower: character.attack,
+                    initialDefense: character.defense,
+                    initialLevel: character.level,
+                    initialMaxLevel: character.maxLevel,
+                    initialExperience: character.experience, // Передаем опыт
+                    initialExperienceToNextLevel: character.experienceToNextLevel, // Передаем требуемый опыт
+                    name: character.name
+                );
             }
             else
             {

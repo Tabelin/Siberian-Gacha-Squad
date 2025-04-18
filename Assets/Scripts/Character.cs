@@ -11,6 +11,10 @@ public class Character
     public int carryWeight; // Переносимый вес
     public int level;       // Текущий уровень
     public int maxLevel;    // Максимальный уровень в зависимости от редкости
+
+    public float experience;
+    public float experienceToNextLevel;
+
     public Sprite sprite;   // Спрайт персонажа
     public Color outlineColor; // Цвет контура для редкости
 

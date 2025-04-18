@@ -79,21 +79,23 @@ public class EnemySpawner : MonoBehaviour
 
                         // Вычисляем статы в зависимости от уровня
                         float enemyHealth = 100f + enemyLevel * 50f;
-                        float enemyAttackPower = 10f + enemyLevel * 5f;
+                        float enemyAttack = 10f + enemyLevel * 5f;
                         float enemyDefense = 5f + enemyLevel * 2f;
 
-                        // Инициализируем HealthSystem с параметром name = "Enemy"
+                        // Приводим к int
                         healthSystem.InitializeHealth(
-                            initialMaxHealth: enemyHealth,
-                            initialCurrentHealth: enemyHealth,
-                            initialAttackPower: enemyAttackPower,
-                            initialDefense: enemyDefense,
+                            initialMaxHealth: (int)enemyHealth,
+                            initialCurrentHealth: (int)enemyHealth,
+                            initialAttackPower: (int)enemyAttack,
+                            initialDefense: (int)enemyDefense,
                             initialLevel: enemyLevel,
-                            initialMaxLevel: enemyMaxLevel, 
+                            initialMaxLevel: enemyMaxLevel,
+                            initialExperience: 0f,
+                            initialExperienceToNextLevel: 0f,
                             name: "Enemy"
                         );
 
-                        Debug.Log($"Враг уровня {enemyLevel} создан: Здоровье - {enemyHealth}, Атака - {enemyAttackPower}, Защита - {enemyDefense}");
+                        Debug.Log($"Враг уровня {enemyLevel} создан: Здоровье - {enemyHealth}, Атака - {enemyAttack}, Защита - {enemyDefense}");
                     }
                     else
                     {

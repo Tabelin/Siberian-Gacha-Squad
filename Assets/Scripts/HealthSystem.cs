@@ -22,24 +22,27 @@ public class HealthSystem : MonoBehaviour
     // Флаг для проверки жизни
     public bool isAlive = true;
 
-    // Опыт персонажа
-    private float experience = 0f;
-    // Необходимый опыт для следующего уровня
-    public float experienceToNextLevel = 100f;
+
+    private float experience = 0f;// Опыт персонажа   
+    public float currentExperience = 0f;// Текущий опыт (для отображения в попапе)   
+    public float experienceToNextLevel = 100f;// Необходимый опыт для следующего уровня
 
     // Коэффициенты прироста стат при уровне
-    public float healthPerLevelMin = 5f; // Минимальный прирост здоровья
-    public float healthPerLevelMax = 25f; // Максимальный прирост здоровья
-    public float attackPerLevelMin = 3f; // Минимальный прирост атаки
-    public float attackPerLevelMax = 7f; // Максимальный прирост атаки
-    public float defensePerLevelMin = 1f; // Минимальный прирост защиты
-    public float defensePerLevelMax = 3f; // Максимальный прирост защиты
+    public int healthPerLevelMin = 5;    // Минимальный прирост здоровья
+    public int healthPerLevelMax = 25;  // Максимальный прирост здоровья
+    public int attackPerLevelMin = 3;   // Минимальный прирост атаки
+    public int attackPerLevelMax = 7;  // Максимальный прирост атаки
+    public int defensePerLevelMin = 1;  // Минимальный прирост защиты
+    public int defensePerLevelMax = 3; // Максимальный прирост защиты
 
-    // Текстовое поле для отображения здоровья
-    public Text hpText;
-
-    // Текстовое поле для отображения уровня
-    public Text levelText;
+    // Текстовые поля (часть префаба персонажа/врага)
+    public Text hpText;                // Текст здоровья 
+    public Text levelText;             // Текст уровня 
+    public Text expText;               // Текст для опыта
+    // Попапы
+    public Text damagePopup;          // Для урона
+    public Text experiencePopup;      // Для опыта
+    public Text levelPopup;           // Для уровня
 
     void Start()
     {
@@ -51,6 +54,7 @@ public class HealthSystem : MonoBehaviour
         }
     }
 
+
     void Update()
     {
         if (hpText != null)
@@ -58,15 +62,17 @@ public class HealthSystem : MonoBehaviour
             UpdateUI(); // Обновляем UI каждый кадр
         }
     }
-    // Метод для инициализации здоровья и статов из сохранения
-    public void InitializeHealth(float initialMaxHealth, float initialCurrentHealth, float initialAttackPower, float initialDefense, int initialLevel, int initialMaxLevel, string name)
+    // Метод для инициализации
+    public void InitializeHealth(int initialMaxHealth, int initialCurrentHealth, int initialAttackPower, int initialDefense, int initialLevel, int initialMaxLevel, float initialExperience, float initialExperienceToNextLevel, string name)
     {
         maxHealth = initialMaxHealth;
         currentHealth = initialCurrentHealth;
         attackPower = initialAttackPower;
         defense = initialDefense;
         level = initialLevel;
-        maxLevel = initialMaxLevel; // Загружаем максимальный уровень из сохранения
+        maxLevel = initialMaxLevel;
+        experience = initialExperience;
+        experienceToNextLevel = initialExperienceToNextLevel;
         characterName = name;
 
         if (hpText != null && levelText != null)
@@ -110,10 +116,8 @@ public class HealthSystem : MonoBehaviour
         {
             RemoveCharacterFromSaveData(characterName); // Удаляем персонажа из сохранения
         }
-        else if (hpText != null)
-        {
-            ShowExperienceNumbers(); // Показываем выпадающие цифры опыта
-        }
+        // Вычисляем награду за опыт
+        float expReward = CalculateExperienceReward(); 
 
         // Отправляем опыт ближайшему персонажу
         SendExperienceToClosestCharacter();
@@ -121,23 +125,25 @@ public class HealthSystem : MonoBehaviour
         Destroy(gameObject); // Уничтожаем объект
     }
 
-    // Метод для отправки опыта ближайшему персонажу
+    // Метод для отправки опыта
     private void SendExperienceToClosestCharacter()
     {
-        GameObject[] characters = GameObject.FindGameObjectsWithTag("Character"); // Находим всех персонажей
-        if (characters.Length > 0)
-        {
-            GameObject closestCharacter = FindClosestCharacter(characters); // Находим ближайшего персонажа
-            if (closestCharacter != null)
-            {
-                CharacterManager characterManager = closestCharacter.GetComponent<CharacterManager>();
-                if (characterManager != null && characterManager.healthSystem != null)
-                {
-                    float expAmount = CalculateExperienceReward(); // Рассчитываем награду за опыт
-                    characterManager.healthSystem.GainExperience(expAmount); // Отправляем опыт персонажу
+        // Находим всех персонажей
+        GameObject[] characters = GameObject.FindGameObjectsWithTag("Character"); // Добавлено!
 
-                    Debug.Log($"Враг отправил опыт персонажу '{closestCharacter.name}': +{expAmount:F2} XP");
-                }
+        if (characters.Length == 0) return;
+
+        GameObject closestCharacter = FindClosestCharacter(characters);
+        if (closestCharacter != null)
+        {
+            CharacterManager characterManager = closestCharacter.GetComponent<CharacterManager>();
+            if (characterManager?.healthSystem != null)
+            {
+                float expReward = CalculateExperienceReward();
+                characterManager.healthSystem.GainExperience(expReward);
+
+                // Показываем попап опыта над персонажем
+                characterManager.healthSystem.ShowExperiencePopup(expReward);
             }
         }
     }
@@ -222,6 +228,9 @@ public class HealthSystem : MonoBehaviour
                 saveData.characters[i].health = (int)maxHealth; // Преобразуем float в int
                 saveData.characters[i].attack = (int)attackPower; // Преобразуем float в int
                 saveData.characters[i].defense = (int)defense; // Преобразуем float в int
+                saveData.characters[i].experience = experience; // Добавляем опыт
+                saveData.characters[i].experienceToNextLevel = experienceToNextLevel; // Добавляем требуемый опыт
+
 
                 Debug.Log($"Данные персонажа '{characterName}' обновлены в сохранении.");
                 SaveUpdatedData(saveData);
@@ -232,19 +241,37 @@ public class HealthSystem : MonoBehaviour
     // Метод для получения опыта
     public void GainExperience(float expAmount)
     {
-        if (!isAlive)
-        {
-            Debug.LogWarning($"Персонаж '{characterName}' мёртв и не может получить опыт!");
-            return;
-        }
+        if (!isAlive || level >= maxLevel) return;
 
         experience += expAmount;
-        Debug.Log($"Персонаж '{characterName}' получил опыт: +{expAmount:F2}. Общий опыт: {experience:F2}/{experienceToNextLevel:F2}");
+        currentExperience = experience; // Для отображения в попапе
 
+        // Показываем попап опыта
+        ShowExperiencePopup(expAmount);
+
+        UpdateUI();
+
+        // Проверка на повышение уровня
         while (experience >= experienceToNextLevel && level < maxLevel)
         {
-            LevelUp(); // Поднимаем уровень
+            LevelUp();
         }
+    }
+
+    // Метод для показа попапа опыта
+    private void ShowExperiencePopup(float exp)
+    {
+        if (experiencePopup == null) return;
+
+        experiencePopup.text = $"+{exp:F0} XP"; // Например: "+50 XP"
+        experiencePopup.color = Color.green;
+        experiencePopup.gameObject.SetActive(true);
+
+        // Позиция над персонажем
+        experiencePopup.transform.position = transform.position + new Vector3(0f, 0f, 0f);
+
+
+        StartCoroutine(MovePopupUpAndHide(experiencePopup));
     }
 
     private void LevelUp()
@@ -271,6 +298,38 @@ public class HealthSystem : MonoBehaviour
         }
 
         SaveCharacterData();
+
+        // Показываем попап уровня
+        ShowLevelUpPopup();
+    }
+
+    // Метод для показа попапа уровня
+    private void ShowLevelUpPopup()
+    {
+        if (levelPopup == null) return;
+
+        levelPopup.text = $"Level {level}!";
+        levelPopup.color = Color.green;
+        levelPopup.gameObject.SetActive(true);
+
+        StartCoroutine(MovePopupUpAndHide(levelPopup)); // Передаём levelPopup
+    }
+
+    // Корутина для движения попапа вверх и скрытия
+    private IEnumerator MovePopupUpAndHide(Text popup)
+    {
+        float duration = 1f;
+        Vector3 originalPosition = popup.transform.position;
+
+        for (float t = 0f; t < duration; t += Time.deltaTime)
+        {
+            // Движение вверх с ускорением
+            float movement = Mathf.Sin(t / duration * Mathf.PI * 1f) * 2f;
+            popup.transform.position = originalPosition + Vector3.up * movement;
+            yield return null;
+        }
+
+        popup.gameObject.SetActive(false);
     }
 
     // Расчет награды за опыт
@@ -279,72 +338,50 @@ public class HealthSystem : MonoBehaviour
         return 50f + level * 10f; // Примерная формула: базовый опыт + бонус за уровень
     }
 
-    // Метод для показа цифр урона
-    private void ShowDamageNumbers(float damage)
-    {
-        InstantiateNumberPopup(damage.ToString(), Color.red); // Создаем popup с уроном (красный цвет)
-    }
-
-    // Метод для показа цифр опыта
-    private void ShowExperienceNumbers()
-    {
-        float expReward = CalculateExperienceReward();
-        InstantiateNumberPopup(expReward.ToString() + " XP", Color.green); // Создаем popup с опытом (зеленый цвет)
-    }
 
 
-    // Метод для обновления текста здоровья и уровня
+    // Обновление текста здоровья и уровня
     private void UpdateUI()
     {
-        if (hpText != null && Camera.main != null)
+        // Для HP
+        if (hpText != null)
         {
-            // Отображаем текущее и максимальное здоровье
-            hpText.text = $"HP: {Mathf.Round(currentHealth)}/{Mathf.Round(maxHealth)}";
-
-            // Позиционируем текст над головой объекта
-            Vector3 screenPosition = Camera.main.WorldToScreenPoint(transform.position + new Vector3(0f, 2f, 0f));
-            hpText.transform.position = screenPosition;
+            hpText.text = $"{Mathf.Round(currentHealth)}/{Mathf.Round(maxHealth)}";
         }
 
-        if (levelText != null && Camera.main != null)
+        // Для уровня
+        if (levelText != null)
         {
-            // Отображаем текущий уровень
-            levelText.text = $"Level: {level}";
+            levelText.text = $"lvl {level}:";
+        }
 
-            // Позиционируем текст выше здоровья
-            Vector3 levelScreenPosition = Camera.main.WorldToScreenPoint(transform.position + new Vector3(6f, 3.5f, 0f));
-            levelText.transform.position = levelScreenPosition;
+        // Для опыта
+        if (expText != null)
+        {
+            expText.text = $"EXP: {experience:F0}/{experienceToNextLevel:F0}";
         }
     }
-    private void InstantiateNumberPopup(string text, Color color)
+    // Метод для показа урона
+    private void ShowDamageNumbers(float damage)
     {
-        GameObject numberPopupPrefab = Resources.Load<GameObject>("NumberPopup"); // Убедитесь, что префаб находится в папке Resources
-        if (numberPopupPrefab == null)
+        if (damagePopup != null)
         {
-            Debug.LogError("Префаб NumberPopup не найден!");
-            return;
+            damagePopup.text = damage.ToString();
+            damagePopup.color = Color.red;
+            damagePopup.gameObject.SetActive(true); // Показываем попап
+
+            // Позиция над персонажем
+            damagePopup.transform.position = transform.position + new Vector3(0f, 0f, 0f);
+
+
+            StartCoroutine(MovePopupUpAndHide(damagePopup));
         }
+    }
 
-        // Создаём попап на позиции над объектом
-        Vector3 spawnPosition = transform.position + new Vector3(0f, 1f, 0f);
-        GameObject popupInstance = Instantiate(numberPopupPrefab, spawnPosition, Quaternion.identity);
-
-        // Настройка текста и цвета
-        Text popupText = popupInstance.GetComponent<Text>();
-        if (popupText != null)
-        {
-            popupText.text = text;
-            popupText.color = color;
-
-            // Увеличиваем размер текста
-            popupText.fontSize = 25;
-        }
-
-        // Увеличиваем время существования
-        NumberPopup popupScript = popupInstance.GetComponent<NumberPopup>();
-        if (popupScript != null)
-        {
-            popupScript.lifetime = 2f; // Теперь попапы существуют 2 секунды
-        }
+    // Метод для скрытия попапа (через корутину)
+    private IEnumerator HideDamagePopup()
+    {
+        yield return new WaitForSeconds(1f);
+        damagePopup.gameObject.SetActive(false);
     }
 }

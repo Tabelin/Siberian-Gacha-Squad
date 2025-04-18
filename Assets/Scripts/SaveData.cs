@@ -21,9 +21,13 @@ public class CharacterData
     public int carryWeight;
     public int level;
     public int maxLevel;
+    public float experience;
+    public float experienceToNextLevel;
 
     // поле указывает, был ли персонаж принят или еще находится в ряду персонажей
     public bool isAccepted;
+
+    public Sprite sprite;
 }
 
 
