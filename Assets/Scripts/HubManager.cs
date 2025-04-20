@@ -1,28 +1,29 @@
-// HubManager.cs
+п»ї// HubManager.cs
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class HubManager : MonoBehaviour
 {
-    // Singleton для доступа к HubManager
+    // Singleton РґР»СЏ РґРѕСЃС‚СѓРїР° Рє HubManager
     public static HubManager Instance;
 
-    // Префаб для персонажа
+    // РџСЂРµС„Р°Р± РґР»СЏ РїРµСЂСЃРѕРЅР°Р¶Р°
     public GameObject characterPrefab;
 
-    // Радиус изменения позиции спавна
+    // Р Р°РґРёСѓСЃ РёР·РјРµРЅРµРЅРёСЏ РїРѕР·РёС†РёРё СЃРїР°РІРЅР°
     public float spawnRadius = 2f;
 
-    // Основная точка спавна (один спавн-поинт для всех)
+    // РћСЃРЅРѕРІРЅР°СЏ С‚РѕС‡РєР° СЃРїР°РІРЅР° (РѕРґРёРЅ СЃРїР°РІРЅ-РїРѕРёРЅС‚ РґР»СЏ РІСЃРµС…)
     public Transform mainSpawnPoint;
 
-    // Атласы аниматоров для фонов
+    // РђС‚Р»Р°СЃС‹ Р°РЅРёРјР°С‚РѕСЂРѕРІ РґР»СЏ С„РѕРЅРѕРІ
     public RuntimeAnimatorController commonBackgroundController;
     public RuntimeAnimatorController rareBackgroundController;
     public RuntimeAnimatorController epicBackgroundController;
     public RuntimeAnimatorController legendaryBackgroundController;
 
-    // Массивы спрайтов для персонажей и фонов
+    // РњР°СЃСЃРёРІС‹ СЃРїСЂР°Р№С‚РѕРІ РґР»СЏ РїРµСЂСЃРѕРЅР°Р¶РµР№ Рё С„РѕРЅРѕРІ
     public Sprite[] commonSprites;
     public Sprite[] rareSprites;
     public Sprite[] epicSprites;
@@ -33,22 +34,38 @@ public class HubManager : MonoBehaviour
     public Sprite[] epicBackgroundSprites;
     public Sprite[] legendaryBackgroundSprites;
 
-    // Список спавненных персонажей
+    // РЎРїРёСЃРѕРє СЃРїР°РІРЅРµРЅРЅС‹С… РїРµСЂСЃРѕРЅР°Р¶РµР№
     private List<GameObject> spawnedCharacters = new List<GameObject>();
 
-    // Список выбранных персонажей
+    // РЎРїРёСЃРѕРє РІС‹Р±СЂР°РЅРЅС‹С… РїРµСЂСЃРѕРЅР°Р¶РµР№
     private List<GameObject> selectedCharacters = new List<GameObject>();
+
+    // РџРѕР·РёС†РёСЏ РЅР°С‡Р°Р»Р° РІС‹РґРµР»РµРЅРёСЏ
+    private Vector3 selectionStart;
+
+    // Р¤Р»Р°Рі РґР»СЏ РїСЂРѕРІРµСЂРєРё РЅР°Р¶Р°С‚РёСЏ РјС‹С€Рё
+    private bool isSelecting = false;
+
+    // Р Р°РјРєР° РІС‹РґРµР»РµРЅРёСЏ (СЃРѕР·РґР°С‘С‚СЃСЏ РґРёРЅР°РјРёС‡РµСЃРєРё)
+    private GameObject selectionBox;
+
+    // РљР°РјРµСЂР°
+    private Camera mainCamera;
+
+    // РЎР»РѕРё РґР»СЏ UI
+    private const int UI_LAYER = 5; // РЎС‚Р°РЅРґР°СЂС‚РЅС‹Р№ СЃР»РѕР№ РґР»СЏ UI (РЅР°РїСЂРёРјРµСЂ, "UI")
+    private const int IGNORE_RAYCAST_LAYER = 21; // РЎР»РѕР№ IgnoreRaycast
 
     void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // Обеспечиваем доступность между сценами
+            DontDestroyOnLoad(gameObject); // РћР±РµСЃРїРµС‡РёРІР°РµРј РґРѕСЃС‚СѓРїРЅРѕСЃС‚СЊ РјРµР¶РґСѓ СЃС†РµРЅР°РјРё
         }
         else
         {
-            Destroy(gameObject); // Уничтожаем дубликат объекта
+            Destroy(gameObject); // РЈРЅРёС‡С‚РѕР¶Р°РµРј РґСѓР±Р»РёРєР°С‚ РѕР±СЉРµРєС‚Р°
         }
     }
 
@@ -56,21 +73,26 @@ public class HubManager : MonoBehaviour
     {
         if (characterPrefab == null || mainSpawnPoint == null)
         {
-            Debug.LogError("Необходимо назначить CharacterPrefab и MainSpawnPoint!");
+            Debug.LogError("РќРµРѕР±С…РѕРґРёРјРѕ РЅР°Р·РЅР°С‡РёС‚СЊ CharacterPrefab Рё MainSpawnPoint!");
             return;
         }
-
-        // Загружаем персонажей из SaveData
+        mainCamera = Camera.main;
+        if (mainCamera == null)
+        {
+            Debug.LogError("РћСЃРЅРѕРІРЅР°СЏ РєР°РјРµСЂР° РЅРµ РЅР°Р№РґРµРЅР°!");
+            return;
+        }
+        // Р—Р°РіСЂСѓР¶Р°РµРј РїРµСЂСЃРѕРЅР°Р¶РµР№ РёР· SaveData
         LoadCharactersFromSaveData();
     }
 
-    // Метод для поиска ближайшего врага
+    // РњРµС‚РѕРґ РґР»СЏ РїРѕРёСЃРєР° Р±Р»РёР¶Р°Р№С€РµРіРѕ РІСЂР°РіР°
     private GameObject FindClosestEnemy()
     {
-        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy"); // Находим всех врагов
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy"); // РќР°С…РѕРґРёРј РІСЃРµС… РІСЂР°РіРѕРІ
         if (enemies.Length == 0)
         {
-            Debug.LogWarning("Враги не найдены!");
+            Debug.LogWarning("Р’СЂР°РіРё РЅРµ РЅР°Р№РґРµРЅС‹!");
             return null;
         }
 
@@ -87,11 +109,11 @@ public class HubManager : MonoBehaviour
             }
         }
 
-        return closestEnemy; // Возвращаем ближайшего врага
+        return closestEnemy; // Р’РѕР·РІСЂР°С‰Р°РµРј Р±Р»РёР¶Р°Р№С€РµРіРѕ РІСЂР°РіР°
     }
 
 
-    // Метод для загрузки персонажей из SaveData
+    // РњРµС‚РѕРґ РґР»СЏ Р·Р°РіСЂСѓР·РєРё РїРµСЂСЃРѕРЅР°Р¶РµР№ РёР· SaveData
     private void LoadCharactersFromSaveData()
     {
         string json = PlayerPrefs.GetString("SaveData", "");  //PlayerPrefs.GetString() 
@@ -114,7 +136,7 @@ public class HubManager : MonoBehaviour
                     experience = data.experience,
                     experienceToNextLevel = data.experienceToNextLevel,
 
-                    sprite = GetCharacterSprite(data.rarity) // Получаем спрайт персонажа
+                    sprite = GetCharacterSprite(data.rarity) // РџРѕР»СѓС‡Р°РµРј СЃРїСЂР°Р№С‚ РїРµСЂСЃРѕРЅР°Р¶Р°
 
                 };
 
@@ -124,35 +146,35 @@ public class HubManager : MonoBehaviour
                 }
                 else
                 {
-                    Debug.Log($"Персонаж {loadedCharacter.name} ({loadedCharacter.rarity}) находится в UI-ряду и не спавнится на хабе.");
+                    Debug.Log($"РџРµСЂСЃРѕРЅР°Р¶ {loadedCharacter.name} ({loadedCharacter.rarity}) РЅР°С…РѕРґРёС‚СЃСЏ РІ UI-СЂСЏРґСѓ Рё РЅРµ СЃРїР°РІРЅРёС‚СЃСЏ РЅР° С…Р°Р±Рµ.");
                 }
             }
         }
         else
         {
-            Debug.Log("Нет сохранённых данных о персонажах.");
+            Debug.Log("РќРµС‚ СЃРѕС…СЂР°РЅС‘РЅРЅС‹С… РґР°РЅРЅС‹С… Рѕ РїРµСЂСЃРѕРЅР°Р¶Р°С….");
         }
     }
 
-    // Метод для спавна персонажа с изменением позиции спавна
+    // РњРµС‚РѕРґ РґР»СЏ СЃРїР°РІРЅР° РїРµСЂСЃРѕРЅР°Р¶Р° СЃ РёР·РјРµРЅРµРЅРёРµРј РїРѕР·РёС†РёРё СЃРїР°РІРЅР°
     private void SpawnCharacter(Character character)
     {
         if (characterPrefab == null || mainSpawnPoint == null)
         {
-            Debug.LogError("Необходимо назначить CharacterPrefab или MainSpawnPoint!");
+            Debug.LogError("РќРµРѕР±С…РѕРґРёРјРѕ РЅР°Р·РЅР°С‡РёС‚СЊ CharacterPrefab РёР»Рё MainSpawnPoint!");
             return;
         }
 
-        // Выбираем случайную позицию спавна в радиусе основной точки
+        // Р’С‹Р±РёСЂР°РµРј СЃР»СѓС‡Р°Р№РЅСѓСЋ РїРѕР·РёС†РёСЋ СЃРїР°РІРЅР° РІ СЂР°РґРёСѓСЃРµ РѕСЃРЅРѕРІРЅРѕР№ С‚РѕС‡РєРё
         Vector3 spawnPosition = mainSpawnPoint.position + Random.insideUnitSphere * spawnRadius;
-        spawnPosition.y = mainSpawnPoint.position.y; // Ограничиваем движение только по XZ
+        spawnPosition.y = mainSpawnPoint.position.y; // РћРіСЂР°РЅРёС‡РёРІР°РµРј РґРІРёР¶РµРЅРёРµ С‚РѕР»СЊРєРѕ РїРѕ XZ
 
-        // Создаём объект персонажа
+        // РЎРѕР·РґР°С‘Рј РѕР±СЉРµРєС‚ РїРµСЂСЃРѕРЅР°Р¶Р°
         GameObject characterObject = Instantiate(characterPrefab, spawnPosition, Quaternion.identity);
 
         if (characterObject != null)
         {
-            // Настройка основного спрайта персонажа
+            // РќР°СЃС‚СЂРѕР№РєР° РѕСЃРЅРѕРІРЅРѕРіРѕ СЃРїСЂР°Р№С‚Р° РїРµСЂСЃРѕРЅР°Р¶Р°
             SpriteRenderer mainSpriteRenderer = characterObject.GetComponent<SpriteRenderer>();
             if (mainSpriteRenderer != null)
             {
@@ -160,10 +182,10 @@ public class HubManager : MonoBehaviour
             }
             else
             {
-                Debug.LogError("SpriteRenderer не найден!");
+                Debug.LogError("SpriteRenderer РЅРµ РЅР°Р№РґРµРЅ!");
             }
 
-            // Инициализируем систему здоровья
+            // РРЅРёС†РёР°Р»РёР·РёСЂСѓРµРј СЃРёСЃС‚РµРјСѓ Р·РґРѕСЂРѕРІСЊСЏ
             HealthSystem healthSystem = characterObject.GetComponent<HealthSystem>();
             if (healthSystem != null)
             {
@@ -174,65 +196,65 @@ public class HubManager : MonoBehaviour
                     initialDefense: character.defense,
                     initialLevel: character.level,
                     initialMaxLevel: character.maxLevel,
-                    initialExperience: character.experience, // Передаем опыт
-                    initialExperienceToNextLevel: character.experienceToNextLevel, // Передаем требуемый опыт
+                    initialExperience: character.experience, // РџРµСЂРµРґР°РµРј РѕРїС‹С‚
+                    initialExperienceToNextLevel: character.experienceToNextLevel, // РџРµСЂРµРґР°РµРј С‚СЂРµР±СѓРµРјС‹Р№ РѕРїС‹С‚
                     name: character.name
                 );
             }
             else
             {
-                Debug.LogError("Компонент HealthSystem не найден!");
+                Debug.LogError("РљРѕРјРїРѕРЅРµРЅС‚ HealthSystem РЅРµ РЅР°Р№РґРµРЅ!");
             } 
 
-            // Добавляем анимированный фон
+            // Р”РѕР±Р°РІР»СЏРµРј Р°РЅРёРјРёСЂРѕРІР°РЅРЅС‹Р№ С„РѕРЅ
             AddAnimatedBackground(characterObject, character.rarity);
 
-            // Сохраняем ссылку на спавненного персонажа
+            // РЎРѕС…СЂР°РЅСЏРµРј СЃСЃС‹Р»РєСѓ РЅР° СЃРїР°РІРЅРµРЅРЅРѕРіРѕ РїРµСЂСЃРѕРЅР°Р¶Р°
             spawnedCharacters.Add(characterObject);
 
-            Debug.Log($"Персонаж {character.name} ({character.rarity}) успешно спавнится в сцене!");
+            Debug.Log($"РџРµСЂСЃРѕРЅР°Р¶ {character.name} ({character.rarity}) СѓСЃРїРµС€РЅРѕ СЃРїР°РІРЅРёС‚СЃСЏ РІ СЃС†РµРЅРµ!");
         }
         else
         {
-            Debug.LogError("Не удалось создать CharacterPrefab!");
+            Debug.LogError("РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ CharacterPrefab!");
         }
     }
 
 
 
-    // Метод для добавления анимированного фона через Animator
+    // РњРµС‚РѕРґ РґР»СЏ РґРѕР±Р°РІР»РµРЅРёСЏ Р°РЅРёРјРёСЂРѕРІР°РЅРЅРѕРіРѕ С„РѕРЅР° С‡РµСЂРµР· Animator
     private void AddAnimatedBackground(GameObject parentObject, Rarity rarity)
     {
         if (parentObject == null)
         {
-            Debug.LogError("Переданный parentObject является null!");
+            Debug.LogError("РџРµСЂРµРґР°РЅРЅС‹Р№ parentObject СЏРІР»СЏРµС‚СЃСЏ null!");
             return;
         }
 
-        // Создаём объект для фона
+        // РЎРѕР·РґР°С‘Рј РѕР±СЉРµРєС‚ РґР»СЏ С„РѕРЅР°
         GameObject backgroundObject = new GameObject("Background");
         backgroundObject.transform.parent = parentObject.transform;
         backgroundObject.transform.localPosition = Vector3.zero;
 
-        // Добавляем Sprite Renderer для фона
+        // Р”РѕР±Р°РІР»СЏРµРј Sprite Renderer РґР»СЏ С„РѕРЅР°
         SpriteRenderer backgroundRenderer = backgroundObject.AddComponent<SpriteRenderer>();
         backgroundRenderer.sprite = GetDefaultBackgroundSprite(rarity);
-        backgroundRenderer.sortingOrder = -1; // Фон находится позади основного спрайта
+        backgroundRenderer.sortingOrder = -1; // Р¤РѕРЅ РЅР°С…РѕРґРёС‚СЃСЏ РїРѕР·Р°РґРё РѕСЃРЅРѕРІРЅРѕРіРѕ СЃРїСЂР°Р№С‚Р°
 
-        // Добавляем Animator компонент
+        // Р”РѕР±Р°РІР»СЏРµРј Animator РєРѕРјРїРѕРЅРµРЅС‚
         Animator animator = backgroundObject.AddComponent<Animator>();
         SetAnimatorController(animator, rarity);
 
-        // Настройка размера фона
-        backgroundRenderer.transform.localScale = new Vector3(1f, 1f, 1f); // Фон чуть больше основного спрайта
+        // РќР°СЃС‚СЂРѕР№РєР° СЂР°Р·РјРµСЂР° С„РѕРЅР°
+        backgroundRenderer.transform.localScale = new Vector3(1f, 1f, 1f); // Р¤РѕРЅ С‡СѓС‚СЊ Р±РѕР»СЊС€Рµ РѕСЃРЅРѕРІРЅРѕРіРѕ СЃРїСЂР°Р№С‚Р°
     }
 
-    // Метод для установки Animator Controller
+    // РњРµС‚РѕРґ РґР»СЏ СѓСЃС‚Р°РЅРѕРІРєРё Animator Controller
     private void SetAnimatorController(Animator animator, Rarity rarity)
     {
         if (animator == null)
         {
-            Debug.LogError("Переданный animator является null!");
+            Debug.LogError("РџРµСЂРµРґР°РЅРЅС‹Р№ animator СЏРІР»СЏРµС‚СЃСЏ null!");
             return;
         }
 
@@ -251,11 +273,11 @@ public class HubManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"Анимационный контроллер для редкости {rarity} не найден!");
+            Debug.LogWarning($"РђРЅРёРјР°С†РёРѕРЅРЅС‹Р№ РєРѕРЅС‚СЂРѕР»Р»РµСЂ РґР»СЏ СЂРµРґРєРѕСЃС‚Рё {rarity} РЅРµ РЅР°Р№РґРµРЅ!");
         }
     }
 
-    // Метод для получения спрайта персонажа по редкости
+    // РњРµС‚РѕРґ РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ СЃРїСЂР°Р№С‚Р° РїРµСЂСЃРѕРЅР°Р¶Р° РїРѕ СЂРµРґРєРѕСЃС‚Рё
     private Sprite GetCharacterSprite(Rarity rarity)
     {
         return rarity switch
@@ -268,7 +290,7 @@ public class HubManager : MonoBehaviour
         };
     }
 
-    // Метод для получения заглушечного спрайта фона
+    // РњРµС‚РѕРґ РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ Р·Р°РіР»СѓС€РµС‡РЅРѕРіРѕ СЃРїСЂР°Р№С‚Р° С„РѕРЅР°
     private Sprite GetDefaultBackgroundSprite(Rarity rarity)
     {
         return rarity switch
@@ -280,82 +302,12 @@ public class HubManager : MonoBehaviour
             _ => null
         };
     }
-
-    // Метод для выбора персонажа
-    public void SelectCharacter(bool isShiftPressed = false)
-    {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-
-        if (Physics.Raycast(ray, out hit))
-        {
-            GameObject hitObject = hit.collider.gameObject;
-
-            if (hitObject.CompareTag("Character"))
-            {
-                if (isShiftPressed)
-                {
-                    // Если нажата клавиша Shift, добавляем/удаляем персонажа из списка выбранных
-                    if (selectedCharacters.Contains(hitObject))
-                    {
-                        selectedCharacters.Remove(hitObject);
-                        Debug.Log($"Персонаж {hitObject.name} удалён из выбора.");
-                    }
-                    else
-                    {
-                        selectedCharacters.Add(hitObject);
-                        Debug.Log($"Персонаж {hitObject.name} добавлен в выбор.");
-                    }
-                }
-                else
-                {
-                    // Если Shift не нажата, очищаем предыдущий выбор и выбираем нового персонажа
-                    selectedCharacters.Clear();
-                    selectedCharacters.Add(hitObject);
-                    Debug.Log($"Выбран персонаж: {hitObject.name}");
-                }
-            }
-        }
-        else
-        {
-            // Если кликнули не на персонажа, очищаем выбор
-            if (!isShiftPressed)
-            {
-                DeselectAllCharacters();
-            }
-        }
-    }
-
-    // Метод для сброса выбора всех персонажей
-    private void DeselectAllCharacters()
-    {
-        if (selectedCharacters.Count > 0)
-        {
-            foreach (GameObject character in selectedCharacters)
-            {
-                CharacterManager manager = character.GetComponent<CharacterManager>();
-                if (manager != null)
-                {
-                    // Если персонаж был выбран, но не выполнял важные действия, возобновляем патрулирование
-                    if (manager.isIdle && !manager.isAttacking && !manager.isGathering)
-                    {
-                        manager.StartPatrolling(); // Возобновляем патрулирование
-                    }
-                }
-            }
-
-            selectedCharacters.Clear();
-            Debug.Log("Выбор персонажей очищен.");
-        }
-    }
-
-
-    // Метод для отправки команд выбранным персонажам
+    // РњРµС‚РѕРґ РґР»СЏ РѕС‚РїСЂР°РІРєРё РєРѕРјР°РЅРґ РІС‹Р±СЂР°РЅРЅС‹Рј РїРµСЂСЃРѕРЅР°Р¶Р°Рј
     public void SendCommand(string command)
     {
         if (selectedCharacters.Count == 0)
         {
-            Debug.LogWarning("Никто не выбран!");
+            Debug.LogWarning("РќРёРєС‚Рѕ РЅРµ РІС‹Р±СЂР°РЅ!");
             return;
         }
 
@@ -371,14 +323,14 @@ public class HubManager : MonoBehaviour
                         break;
 
                     case "Attack":
-                        GameObject attackTarget = FindClosestEnemy(); // Находим ближайшего врага
+                        GameObject attackTarget = FindClosestEnemy(); // РќР°С…РѕРґРёРј Р±Р»РёР¶Р°Р№С€РµРіРѕ РІСЂР°РіР°
                         if (attackTarget != null)
                         {
-                            manager.StartAttack(attackTarget); // Отправляем команду атаки с указанием цели
+                            manager.StartAttack(attackTarget); // РћС‚РїСЂР°РІР»СЏРµРј РєРѕРјР°РЅРґСѓ Р°С‚Р°РєРё СЃ СѓРєР°Р·Р°РЅРёРµРј С†РµР»Рё
                         }
                         else
                         {
-                            Debug.LogWarning("Ближайший враг не найден!");
+                            Debug.LogWarning("Р‘Р»РёР¶Р°Р№С€РёР№ РІСЂР°Рі РЅРµ РЅР°Р№РґРµРЅ!");
                         }
                         break;
 
@@ -391,22 +343,22 @@ public class HubManager : MonoBehaviour
                         break;
 
                     default:
-                        Debug.LogWarning($"Неизвестная команда: {command}");
+                        Debug.LogWarning($"РќРµРёР·РІРµСЃС‚РЅР°СЏ РєРѕРјР°РЅРґР°: {command}");
                         break;
                 }
             }
             else
             {
-                Debug.LogError("Компонент CharacterManager не найден!");
+                Debug.LogError("РљРѕРјРїРѕРЅРµРЅС‚ CharacterManager РЅРµ РЅР°Р№РґРµРЅ!");
             }
         }
     }
-    // Метод для направления выбранных персонажей на место клика мыши
+    // РњРµС‚РѕРґ РґР»СЏ РЅР°РїСЂР°РІР»РµРЅРёСЏ РІС‹Р±СЂР°РЅРЅС‹С… РїРµСЂСЃРѕРЅР°Р¶РµР№ РЅР° РјРµСЃС‚Рѕ РєР»РёРєР° РјС‹С€Рё
     public void SendMoveCommandToSelectedCharacters()
     {
         if (selectedCharacters.Count == 0)
         {
-            Debug.LogWarning("Никто не выбран для движения!");
+            Debug.LogWarning("РќРёРєС‚Рѕ РЅРµ РІС‹Р±СЂР°РЅ РґР»СЏ РґРІРёР¶РµРЅРёСЏ!");
             return;
         }
 
@@ -422,29 +374,29 @@ public class HubManager : MonoBehaviour
                 CharacterManager manager = character.GetComponent<CharacterManager>();
                 if (manager != null)
                 {
-                    manager.MoveToTarget(targetPosition); // Отправляем команду на движение
+                    manager.MoveToTarget(targetPosition); // РћС‚РїСЂР°РІР»СЏРµРј РєРѕРјР°РЅРґСѓ РЅР° РґРІРёР¶РµРЅРёРµ
 
-                    // Если персонаж занят важным действием, предупреждаем об этом
+                    // Р•СЃР»Рё РїРµСЂСЃРѕРЅР°Р¶ Р·Р°РЅСЏС‚ РІР°Р¶РЅС‹Рј РґРµР№СЃС‚РІРёРµРј, РїСЂРµРґСѓРїСЂРµР¶РґР°РµРј РѕР± СЌС‚РѕРј
                     if (manager.isAttacking || manager.isGathering)
                     {
-                        Debug.LogWarning($"Персонаж {character.name} прерывает важное действие для выполнения команды игрока."); 
+                        Debug.LogWarning($"РџРµСЂСЃРѕРЅР°Р¶ {character.name} РїСЂРµСЂС‹РІР°РµС‚ РІР°Р¶РЅРѕРµ РґРµР№СЃС‚РІРёРµ РґР»СЏ РІС‹РїРѕР»РЅРµРЅРёСЏ РєРѕРјР°РЅРґС‹ РёРіСЂРѕРєР°."); 
                     }
                 }
                 else
                 {
-                    Debug.LogError("Компонент CharacterManager не найден!");
+                    Debug.LogError("РљРѕРјРїРѕРЅРµРЅС‚ CharacterManager РЅРµ РЅР°Р№РґРµРЅ!");
                 }
             }
         }
         else
         {
-            Debug.LogWarning("Клик мыши не попал на поверхность земли!");
+            Debug.LogWarning("РљР»РёРє РјС‹С€Рё РЅРµ РїРѕРїР°Р» РЅР° РїРѕРІРµСЂС…РЅРѕСЃС‚СЊ Р·РµРјР»Рё!");
         }
     }
 
 
 
-    // Метод для обновления направления персонажей
+    // РњРµС‚РѕРґ РґР»СЏ РѕР±РЅРѕРІР»РµРЅРёСЏ РЅР°РїСЂР°РІР»РµРЅРёСЏ РїРµСЂСЃРѕРЅР°Р¶РµР№
     private void UpdateCharacterRotation()
     {
         foreach (GameObject character in spawnedCharacters)
@@ -456,12 +408,12 @@ public class HubManager : MonoBehaviour
         }
     }
 
-    // Метод для поворота персонажа к камере
+    // РњРµС‚РѕРґ РґР»СЏ РїРѕРІРѕСЂРѕС‚Р° РїРµСЂСЃРѕРЅР°Р¶Р° Рє РєР°РјРµСЂРµ
     private void AlignCharacterToCamera(GameObject characterObject)
     {
         if (characterObject == null || Camera.main == null)
         {
-            Debug.LogError("Переданный объект или основная камера является null!");
+            Debug.LogError("РџРµСЂРµРґР°РЅРЅС‹Р№ РѕР±СЉРµРєС‚ РёР»Рё РѕСЃРЅРѕРІРЅР°СЏ РєР°РјРµСЂР° СЏРІР»СЏРµС‚СЃСЏ null!");
             return;
         }
 
@@ -474,51 +426,62 @@ public class HubManager : MonoBehaviour
 
     void Update()
     {
-        // Выбор персонажа (нажатие мыши)
-        if (Input.GetMouseButtonDown(0))
-        {
-            bool isShiftPressed = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-            SelectCharacter(isShiftPressed);
-        }
-
-        // Сброс выбора при клике вне персонажей
+        // РЎР±СЂРѕСЃ РІС‹Р±РѕСЂР° РїСЂРё РєР»РёРєРµ РІРЅРµ РїРµСЂСЃРѕРЅР°Р¶РµР№
         if (Input.GetMouseButtonUp(0) && !IsClickOnCharacter())
         {
-            DeselectAllCharacters();
+            EndSelection();
         }
 
-        // Направление выбранных персонажей на место клика мыши (правая кнопка мыши)
-        if (Input.GetMouseButtonDown(1)) // Проверяем клик правой кнопкой мыши
+        // РќР°С‡Р°Р»Рѕ РІС‹РґРµР»РµРЅРёСЏ РїСЂРё РЅР°Р¶Р°С‚РёРё Р›РљРњ
+        if (Input.GetMouseButtonDown(0))
         {
-            SendMoveCommandToSelectedCharacters(); // Вызываем метод для направления персонажей
+            StartSelection();
         }
 
-        // Отправка команд выбранным персонажам
-        if (Input.GetKeyDown(KeyCode.T)) // Атаковать
+        // РџСЂРѕРґРѕР»Р¶РµРЅРёРµ РІС‹РґРµР»РµРЅРёСЏ РїСЂРё СѓРґРµСЂР¶Р°РЅРёРё Р›РљРњ
+        if (Input.GetMouseButton(0) && isSelecting)
+        {
+            ContinueSelection();
+        }
+
+        // Р—Р°РІРµСЂС€РµРЅРёРµ РІС‹РґРµР»РµРЅРёСЏ РїСЂРё РѕС‚РїСѓСЃРєР°РЅРёРё Р›РљРњ
+        if (Input.GetMouseButtonUp(0))
+        {
+            EndSelection();
+        }
+
+        // РќР°РїСЂР°РІР»РµРЅРёРµ РІС‹Р±СЂР°РЅРЅС‹С… РїРµСЂСЃРѕРЅР°Р¶РµР№ РЅР° РјРµСЃС‚Рѕ РєР»РёРєР° РјС‹С€Рё (РїСЂР°РІР°СЏ РєРЅРѕРїРєР° РјС‹С€Рё)
+        if (Input.GetMouseButtonDown(1)) // РџСЂРѕРІРµСЂСЏРµРј РєР»РёРє РїСЂР°РІРѕР№ РєРЅРѕРїРєРѕР№ РјС‹С€Рё
+        {
+            SendMoveCommandToSelectedCharacters(); // Р’С‹Р·С‹РІР°РµРј РјРµС‚РѕРґ РґР»СЏ РЅР°РїСЂР°РІР»РµРЅРёСЏ РїРµСЂСЃРѕРЅР°Р¶РµР№
+        }
+
+        // РћС‚РїСЂР°РІРєР° РєРѕРјР°РЅРґ РІС‹Р±СЂР°РЅРЅС‹Рј РїРµСЂСЃРѕРЅР°Р¶Р°Рј
+        if (Input.GetKeyDown(KeyCode.T)) // РђС‚Р°РєРѕРІР°С‚СЊ
         {
             SendCommand("Attack");
         }
 
-        if (Input.GetKeyDown(KeyCode.G)) // Добывать ресурсы
+        if (Input.GetKeyDown(KeyCode.G)) // Р”РѕР±С‹РІР°С‚СЊ СЂРµСЃСѓСЂСЃС‹
         {
             SendCommand("Gather");
         }
 
-        if (Input.GetKeyDown(KeyCode.C)) // Взять контроль
+        if (Input.GetKeyDown(KeyCode.C)) // Р’Р·СЏС‚СЊ РєРѕРЅС‚СЂРѕР»СЊ
         {
             SendCommand("TakeControl");
         }
 
-        if (Input.GetKeyDown(KeyCode.P)) // Начать патрулирование
+        if (Input.GetKeyDown(KeyCode.P)) // РќР°С‡Р°С‚СЊ РїР°С‚СЂСѓР»РёСЂРѕРІР°РЅРёРµ
         {
             SendCommand("Patrol");
         }
 
-        // Каждый кадр обновляем направление персонажей
+        // РљР°Р¶РґС‹Р№ РєР°РґСЂ РѕР±РЅРѕРІР»СЏРµРј РЅР°РїСЂР°РІР»РµРЅРёРµ РїРµСЂСЃРѕРЅР°Р¶РµР№
         UpdateCharacterRotation();
     }
 
-    // Проверка, попал ли клик на персонажа
+    // РџСЂРѕРІРµСЂРєР°, РїРѕРїР°Р» Р»Рё РєР»РёРє РЅР° РїРµСЂСЃРѕРЅР°Р¶Р°
     private bool IsClickOnCharacter()
     {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -530,5 +493,142 @@ public class HubManager : MonoBehaviour
         }
 
         return false;
+    }
+    // РњРµС‚РѕРґ РґР»СЏ РЅР°С‡Р°Р»Р° РІС‹РґРµР»РµРЅРёСЏ
+    private void StartSelection()
+    {
+        isSelecting = true;
+        selectionStart = Input.mousePosition;
+
+        // РЎРѕР·РґР°С‘Рј СЂР°РјРєСѓ РІС‹РґРµР»РµРЅРёСЏ
+        if (selectionBox == null)
+        {
+            selectionBox = new GameObject("Selection Box");
+            selectionBox.transform.parent = transform;
+            selectionBox.layer = LayerMask.NameToLayer("UI");
+            selectionBox.layer = IGNORE_RAYCAST_LAYER; // РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј СЃР»РѕР№ IgnoreRaycast
+
+
+            selectionBox.AddComponent<RectTransform>();
+            selectionBox.AddComponent<Image>();
+
+            Image image = selectionBox.GetComponent<Image>();
+            image.color = new Color(0f, 0f, 1f, 0.2f); // Р¦РІРµС‚ СЂР°РјРєРё (РїСЂРѕР·СЂР°С‡РЅС‹Р№ СЃРёРЅРёР№)
+            image.raycastTarget = false; // РћС‚РєР»СЋС‡Р°РµРј РѕР±СЂР°Р±РѕС‚РєСѓ РєР»РёРєРѕРІ РґР»СЏ СЂР°РјРєРё
+        }
+
+        selectionBox.SetActive(true);
+    }
+    // РњРµС‚РѕРґ РґР»СЏ РїСЂРѕРґРѕР»Р¶РµРЅРёСЏ РІС‹РґРµР»РµРЅРёСЏ
+    private void ContinueSelection()
+    {
+        Vector3 mousePosition = Input.mousePosition;
+
+        // РќР°С…РѕРґРёРј СЂР°Р·РјРµСЂС‹ СЂР°РјРєРё
+        float width = Mathf.Abs(mousePosition.x - selectionStart.x);
+        float height = Mathf.Abs(mousePosition.y - selectionStart.y);
+
+        // РћР±РЅРѕРІР»СЏРµРј РїРѕР·РёС†РёСЋ Рё СЂР°Р·РјРµСЂ СЂР°РјРєРё
+        RectTransform rectTransform = selectionBox.GetComponent<RectTransform>();
+        rectTransform.anchorMin = new Vector2(0, 0);
+        rectTransform.anchorMax = new Vector2(0, 0);
+        rectTransform.pivot = new Vector2(0, 0);
+        rectTransform.position = new Vector2(
+            Mathf.Min(selectionStart.x, mousePosition.x),
+            Mathf.Min(selectionStart.y, mousePosition.y)
+        );
+        rectTransform.sizeDelta = new Vector2(width, height);
+    }
+    // РњРµС‚РѕРґ РґР»СЏ Р·Р°РІРµСЂС€РµРЅРёСЏ РІС‹РґРµР»РµРЅРёСЏ
+    private void EndSelection()
+    {
+        isSelecting = false;
+
+        if (selectionBox != null)
+        {
+            selectionBox.SetActive(false); // РЎРєСЂС‹РІР°РµРј СЂР°РјРєСѓ
+        }
+
+        // РџРѕР»СѓС‡Р°РµРј РіСЂР°РЅРёС†С‹ РѕР±Р»Р°СЃС‚Рё
+        Vector3[] worldCorners = GetWorldCorners();
+
+        // РС‰РµРј РїРµСЂСЃРѕРЅР°Р¶РµР№ РІРЅСѓС‚СЂРё РѕР±Р»Р°СЃС‚Рё
+        SelectCharactersInArea(worldCorners);
+
+        Debug.Log($"Р’С‹Р±СЂР°РЅРѕ РїРµСЂСЃРѕРЅР°Р¶РµР№: {selectedCharacters.Count}");
+    }
+    // РњРµС‚РѕРґ РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ СѓРіР»РѕРІ СЂР°РјРєРё РІ РјРёСЂРѕРІС‹С… РєРѕРѕСЂРґРёРЅР°С‚Р°С…
+    private Vector3[] GetWorldCorners()
+    {
+        if (selectionBox == null) return new Vector3[4];
+
+        RectTransform rectTransform = selectionBox.GetComponent<RectTransform>();
+        Vector3[] corners = new Vector3[4];
+        rectTransform.GetWorldCorners(corners);
+
+        return corners;
+    }
+    // РњРµС‚РѕРґ РґР»СЏ РІС‹Р±РѕСЂР° РїРµСЂСЃРѕРЅР°Р¶РµР№ РІРЅСѓС‚СЂРё РѕР±Р»Р°СЃС‚Рё
+    private void SelectCharactersInArea(Vector3[] worldCorners)
+    {
+        // РћС‡РёС‰Р°РµРј РїСЂРµРґС‹РґСѓС‰РёР№ РІС‹Р±РѕСЂ
+        DeselectAllCharacters();
+
+        // РќР°С…РѕРґРёРј РІСЃРµС… РїРµСЂСЃРѕРЅР°Р¶РµР№
+        GameObject[] characters = GameObject.FindGameObjectsWithTag("Character");
+
+        foreach (GameObject character in characters)
+        {
+            if (IsCharacterInArea(character, worldCorners))
+            {
+                SelectCharacter(character);
+            }
+        }
+    }
+    // РњРµС‚РѕРґ РґР»СЏ РїСЂРѕРІРµСЂРєРё, РЅР°С…РѕРґРёС‚СЃСЏ Р»Рё РїРµСЂСЃРѕРЅР°Р¶ РІРЅСѓС‚СЂРё РѕР±Р»Р°СЃС‚Рё
+    private bool IsCharacterInArea(GameObject character, Vector3[] worldCorners)
+    {
+        Vector3 characterScreenPos = mainCamera.WorldToScreenPoint(character.transform.position);
+
+        // РњРёРЅРёРјР°Р»СЊРЅС‹Рµ Рё РјР°РєСЃРёРјР°Р»СЊРЅС‹Рµ РєРѕРѕСЂРґРёРЅР°С‚С‹ СЂР°РјРєРё
+        float minX = Mathf.Min(worldCorners[0].x, worldCorners[2].x);
+        float maxX = Mathf.Max(worldCorners[0].x, worldCorners[2].x);
+        float minY = Mathf.Min(worldCorners[0].y, worldCorners[2].y);
+        float maxY = Mathf.Max(worldCorners[0].y, worldCorners[2].y);
+
+        // РџСЂРѕРІРµСЂСЏРµРј, РїРѕРїР°РґР°РµС‚ Р»Рё РїРµСЂСЃРѕРЅР°Р¶ РІ РѕР±Р»Р°СЃС‚СЊ
+        return characterScreenPos.x >= minX && characterScreenPos.x <= maxX &&
+               characterScreenPos.y >= minY && characterScreenPos.y <= maxY;
+    }
+    // РњРµС‚РѕРґ РґР»СЏ РІС‹РґРµР»РµРЅРёСЏ РїРµСЂСЃРѕРЅР°Р¶Р°
+    private void SelectCharacter(GameObject character)
+    {
+        if (!selectedCharacters.Contains(character))
+        {
+            selectedCharacters.Add(character);
+
+            // Р”РѕР±Р°РІР»СЏРµРј СЌС„С„РµРєС‚ РІС‹РґРµР»РµРЅРёСЏ (РЅР°РїСЂРёРјРµСЂ, РёР·РјРµРЅРµРЅРёРµ С†РІРµС‚Р° СЃРїСЂР°Р№С‚Р°)
+            SpriteRenderer spriteRenderer = character.GetComponent<SpriteRenderer>();
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.color = Color.cyan; // Р’С‹РґРµР»РµРЅРЅС‹Р№ С†РІРµС‚
+            }
+
+            Debug.Log($"РџРµСЂСЃРѕРЅР°Р¶ '{character.name}' РІС‹Р±СЂР°РЅ.");
+        }
+    }
+    // РњРµС‚РѕРґ РґР»СЏ СЃРЅСЏС‚РёСЏ РІС‹РґРµР»РµРЅРёСЏ СЃРѕ РІСЃРµС… РїРµСЂСЃРѕРЅР°Р¶РµР№
+    private void DeselectAllCharacters()
+    {
+        foreach (GameObject character in selectedCharacters)
+        {
+            SpriteRenderer spriteRenderer = character.GetComponent<SpriteRenderer>();
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.color = Color.white; // Р’РѕР·РІСЂР°С‰Р°РµРј РёСЃС…РѕРґРЅС‹Р№ С†РІРµС‚
+            }
+        }
+
+        selectedCharacters.Clear(); // РћС‡РёС‰Р°РµРј СЃРїРёСЃРѕРє РІС‹Р±СЂР°РЅРЅС‹С… РїРµСЂСЃРѕРЅР°Р¶РµР№
     }
 }
