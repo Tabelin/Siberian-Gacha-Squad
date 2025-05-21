@@ -25,7 +25,7 @@ public class HealthSystem : MonoBehaviour
 
     private float experience = 0f;// Опыт персонажа   
     public float currentExperience = 0f;// Текущий опыт (для отображения в попапе)   
-    public float experienceToNextLevel = 100f;// Необходимый опыт для следующего уровня
+    public float experienceToNextLevel = 1000f;// Необходимый опыт для следующего уровня
 
     // Коэффициенты прироста стат при уровне
     public int healthPerLevelMin = 5;    // Минимальный прирост здоровья
@@ -276,13 +276,14 @@ public class HealthSystem : MonoBehaviour
             return;
         }
 
+        experienceToNextLevel *= 1.5f;
+
         level++;
+
         maxHealth += Random.Range(healthPerLevelMin, healthPerLevelMax); // Прирост здоровья (float)
         currentHealth = maxHealth;
         attackPower += (float)Random.Range((int)attackPerLevelMin, (int)attackPerLevelMax); // Преобразуем в int, затем в float
         defense += (float)Random.Range((int)defensePerLevelMin, (int)defensePerLevelMax); // То же для защиты
-
-        experienceToNextLevel *= 1.5f;
 
         Debug.Log($"Персонаж '{characterName}' достиг нового уровня! Уровень: {level}");
 

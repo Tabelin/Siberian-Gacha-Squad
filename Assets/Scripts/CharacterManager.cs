@@ -14,12 +14,13 @@ public class CharacterManager : MonoBehaviour
     // Радиус ближней атаки
     private float meleeAttackRange = 2f;  // Радиус дальней атаки
     private float rangedAttackRange = 15f; // Время задержки между атаками
-    public float detectionRange = 19f; // Радиус обнаружения
-    public float meleeAttackCooldown = 2f; // Задержка для ближней атаки
-    public float rangedAttackCooldown = 3f; // Задержка для дальней атаки
-    // Таймеры для атак
+    public float detectionRadius = 20f; // Радиус обнаружения
+
+
+    public float meleeAttackCooldown = 1f; // Задержка для ближней атаки
+    public float rangedAttackCooldown = 2f; // Задержка для дальней атаки
     private float attackTimer = 0f;
-    private float currentAttackCooldown;
+    private float currentAttackCooldown = 0f;
 
     // Центральная точка патрулирования
     private Vector3 patrolCenter;
@@ -43,13 +44,13 @@ public class CharacterManager : MonoBehaviour
 
     // Начальная точка спавна
     private Transform spawnPoint;
+    // LayerMask для врагов
+    public LayerMask enemyLayerMask;
 
     // Компонент NavMeshAgent для поиска пути
     private UnityEngine.AI.NavMeshAgent navMeshAgent;
-
     // Компонент HealthSystem для здоровья персонажа
     public HealthSystem healthSystem;
-
     // Атакуемый объект
     private GameObject attackTarget;
 
@@ -83,60 +84,121 @@ public class CharacterManager : MonoBehaviour
 
     void Update()
     {
-        if (isPatrolling && !isAttacking)
+        if (Input.GetMouseButtonDown(1))
         {
-            DetectEnemies(); // Проверяем наличие врагов
-            Patrol();
+            HandlePlayerClick();
         }
-        else if (isAttacking && attackTarget != null)
+
+        if (isAttacking && attackTarget != null)
         {
-            //StopAllActions();
-            AttackLogic(); // Объединенная логика атаки
+            // Проверяем, находится ли цель в detectionRadius
+            if (attackTarget.activeInHierarchy)
+            {
+                float distanceToTarget = Vector3.Distance(transform.position, attackTarget.transform.position);
+
+                // Если цель вышла за detectionRadius → останавливаем атаку
+                if (distanceToTarget > detectionRadius)
+                {
+                    StopAttack();
+                }
+                else if (distanceToTarget > rangedAttackRange)
+                {
+                    // Если цель вне дальней атаки → двигаемся к ней
+                    MoveToTarget(attackTarget.transform.position);
+                    return; // Прерываем атаку, если цель слишком далеко
+                }
+            }
+            else
+            {
+                StopAttack();
+                return;
+            }
+
+            // Атака, если цель в зоне
+            AttackLogic();
         }
+        // Если цель недоступна, но атака всё ещё активна
         else if (isAttacking && attackTarget == null)
         {
-            StopAllActions();
-            StartPatrolling();
+            StopAttack();
         }
         else if (moveTarget != Vector3.zero)
         {
+            isPatrolling = false; // Останавливаем патрулирование
             MoveToTarget(moveTarget);
 
-            // Если достигли цели с учетом радиуса, начинаем патрулирование
+            // Если достигли цели, начинаем патрулирование
             if (Vector3.Distance(transform.position, moveTarget) < 2.1f)
             {
-                moveTarget = Vector3.zero; // Сбрасываем целевую точку
-
-                // Начинаем патрулирование
+                moveTarget = Vector3.zero;
                 StartPatrolling();
-                Patrol();
             }
         }
         else if (isIdle)
         {
-            StartPatrolling(); 
+            IdleControl();
+        }
+        else if (isPatrolling)
+        {
+            DetectEnemies(); // Обнаружение врагов в патруле
+            Patrol(); // Патрулирование
         }
     }
 
     // Метод для автоматического обнаружения врагов
     private void DetectEnemies()
     {
-        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy"); // Находим всех врагов
-        if (enemies.Length > 0)
-        {
-            GameObject closestEnemy = FindClosestEnemy(enemies); // Находим ближайшего врага
-            if (closestEnemy != null)
-            {
-                float distanceToEnemy = Vector3.Distance(transform.position, closestEnemy.transform.position);
+        Collider[] enemies = Physics.OverlapSphere(transform.position, detectionRadius, enemyLayerMask);
 
-                if (distanceToEnemy <= detectionRange)
+        if (enemies.Length == 0)
+        {
+            if (attackTarget != null)
+            {
+                StopAttack();
+            }
+            return; // Нет врагов в радиусе
+        }
+
+        GameObject closestEnemy = null;
+        float shortestDistance = Mathf.Infinity;
+
+        foreach (Collider enemy in enemies)
+        {
+            float distance = Vector3.Distance(transform.position, enemy.transform.position);
+            if (distance < shortestDistance)
+            {
+                shortestDistance = distance;
+                closestEnemy = enemy.gameObject;
+            }
+        }
+
+        if (closestEnemy != null)
+        {
+            
+
+            attackTarget = closestEnemy;
+            isAttacking = true;
+            isPatrolling = false;
+
+            // Если цель в detectionRadius, но вне rangedAttackRange → двигаемся к ней
+            float distanceToEnemy = shortestDistance;
+
+            if (distanceToEnemy <= detectionRadius)
+            {
+                isAttacking = true;
+
+                if (distanceToEnemy > rangedAttackRange)
                 {
-                    // Если враг в пределах радиуса обнаружения, начинаем атаку
-                    StartAttack(closestEnemy);
+                    MoveToTarget(attackTarget.transform.position); // Двигаемся к врагу
+                }
+                else
+                {
+                    navMeshAgent.SetDestination(transform.position); // Останавливаемся
                 }
             }
         }
     }
+
 
     // Объединенная логика атаки
     private void AttackLogic()
@@ -149,31 +211,46 @@ public class CharacterManager : MonoBehaviour
 
         float distanceToTarget = Vector3.Distance(transform.position, attackTarget.transform.position);
 
+        // Если цель вышла за радиус обнаружения
+        if (distanceToTarget > detectionRadius)
+        {
+            StopAttack();
+            return;
+        }
+
+        // Если враг вне дальней атаки → двигаемся к нему
         if (distanceToTarget > rangedAttackRange)
         {
-            // Если цель находится вне радиуса дальних атак, двигаемся к ней
             MoveToTarget(attackTarget.transform.position);
+            attackTimer = 0f;
+            return;
         }
-        else
+
+        // Останавливаемся, если цель в зоне атаки
+        navMeshAgent.SetDestination(transform.position);
+
+        // Определяем текущий тип атаки
+        if (distanceToTarget <= meleeAttackRange)
         {
-            // Определяем тип атаки в зависимости от расстояния
-            if (distanceToTarget <= meleeAttackRange)
-            {
-                currentAttackCooldown = meleeAttackCooldown; // Используем задержку для ближней атаки
-            }
-            else
-            {
-                currentAttackCooldown = rangedAttackCooldown; // Используем задержку для дальней атаки
-            }
+            currentAttackCooldown = meleeAttackCooldown;
+        }
+        else if (distanceToTarget <= rangedAttackRange)
+        {
+            currentAttackCooldown = rangedAttackCooldown;
+        }
+        else 
+        {
+            return;
+        }
 
-            // Обновляем таймер для атаки
-            attackTimer += Time.deltaTime;
+        // Обновляем таймер для атаки
+        attackTimer += Time.deltaTime;
 
-            if (attackTimer >= currentAttackCooldown)
-            {
-                PerformAttack(attackTarget, distanceToTarget); // Выполняем атаку
-                attackTimer = 0f; // Сбрасываем таймер после атаки
-            }
+        // Выполняем атаку
+        if (attackTimer >= currentAttackCooldown)
+        {
+            PerformAttack(attackTarget, distanceToTarget);
+            attackTimer = 0f;
         }
     }
 
@@ -194,26 +271,6 @@ public class CharacterManager : MonoBehaviour
             Debug.Log($"Персонаж начал атаку: {target.name}");
         });
     }
-
-    // Метод для поиска ближайшего врага
-    private GameObject FindClosestEnemy(GameObject[] enemies)
-    {
-        GameObject closestEnemy = null;
-        float shortestDistance = Mathf.Infinity;
-
-        foreach (GameObject enemy in enemies)
-        {
-            float distance = Vector3.Distance(transform.position, enemy.transform.position);
-            if (distance < shortestDistance)
-            {
-                shortestDistance = distance;
-                closestEnemy = enemy;
-            }
-        }
-
-        return closestEnemy;
-    }
-
 
     // Метод для начала патрулирования
     public void StartPatrolling()
@@ -246,10 +303,15 @@ public class CharacterManager : MonoBehaviour
                 damage = CalculateDamage(); // Ближняя атака
                 Debug.Log($"Ближняя атака! Нанесено урона: {damage:F2}");
             }
+            else if (distanceToTarget <= rangedAttackRange)
+            {
+                damage = CalculateRangedDamage();
+                Debug.Log($"Дальнюю атака! Нанесено урона: {damage:F2}");
+            }
             else
             {
-                damage = CalculateRangedDamage(); // Дальнюю атака
-                Debug.Log($"Дальнюю атака! Нанесено урона: {damage:F2}");
+                // Если цель слишком далеко, продолжаем движение
+                return;
             }
 
             enemy.healthSystem.TakeDamage(damage); // Отправляем урон врагу
@@ -279,7 +341,7 @@ public class CharacterManager : MonoBehaviour
         }
 
         // Добавляем бонус или штраф к дальней атаке
-        return healthSystem.attackPower * 1f; // Пример: дальняя атака слабее на 25%
+        return healthSystem.attackPower * 1f; // Пример: дальняя атака слабее
     }
 
 
@@ -517,6 +579,21 @@ public class CharacterManager : MonoBehaviour
         {
             Destroy(item); // Уничтожаем предмет
             Debug.Log("Предмет подобран!");
+        }
+    }
+    // Обработка клика игрока
+    private void HandlePlayerClick()
+    {
+        isAttacking = false; // 🔁 Прерываем атаку
+        isPatrolling = false;
+        isGathering = false;
+        isIdle = false;
+
+        // Пример: игрок кликнул на точку → двигаемся к ней
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray, out RaycastHit hit))
+        {
+            moveTarget = hit.point;
         }
     }
 }

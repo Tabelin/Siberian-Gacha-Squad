@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 1935003097425435162}
   - component: {fileID: 3656309045690542999}
   - component: {fileID: 5756298144234335045}
-  m_Layer: 5
+  m_Layer: 7
   m_Name: LevelText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -94,7 +94,7 @@ GameObject:
   - component: {fileID: 1995877622333472137}
   - component: {fileID: 7294474397955514400}
   - component: {fileID: 6168539937531707809}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: CharacterPrefab
   m_TagString: Character
   m_Icon: {fileID: 0}
@@ -184,7 +184,7 @@ GameObject:
   - component: {fileID: 2190514370822590451}
   - component: {fileID: 6543224324020398923}
   - component: {fileID: 4795713843671382176}
-  m_Layer: 5
+  m_Layer: 7
   m_Name: Canvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -289,7 +289,7 @@ GameObject:
   - component: {fileID: 1937977734239161919}
   - component: {fileID: 7850172061754947468}
   - component: {fileID: 6660226714936450476}
-  m_Layer: 5
+  m_Layer: 7
   m_Name: HPText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -368,7 +368,7 @@ GameObject:
   - component: {fileID: 4942975598279260668}
   - component: {fileID: 535355118186640226}
   - component: {fileID: 4861892465003592954}
-  m_Layer: 5
+  m_Layer: 7
   m_Name: damagePopup
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -445,7 +445,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 646520300553161964}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: CharacterUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -479,7 +479,7 @@ GameObject:
   - component: {fileID: 6379010993932649217}
   - component: {fileID: 7189639076558553560}
   - component: {fileID: 4289657268933530164}
-  m_Layer: 5
+  m_Layer: 7
   m_Name: levelPopup
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -558,7 +558,7 @@ GameObject:
   - component: {fileID: 3593213875025791510}
   - component: {fileID: 6482459203169160481}
   - component: {fileID: 7465544114893241422}
-  m_Layer: 5
+  m_Layer: 7
   m_Name: ExperiencePopup
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -715,13 +715,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 3.73
   patrolRadius: 12.39
-  detectionRange: 19
-  meleeAttackCooldown: 2
-  rangedAttackCooldown: 3
+  detectionRadius: 19
+  meleeAttackCooldown: 0.1
+  rangedAttackCooldown: 0.1
   isPatrolling: 0
   isAttacking: 0
   isGathering: 0
   isIdle: 1
+  enemyLayerMask:
+    serializedVersion: 2
+    m_Bits: 256
   healthSystem: {fileID: 6168539937531707809}
 --- !u!136 &4681455755440127831
 CapsuleCollider:

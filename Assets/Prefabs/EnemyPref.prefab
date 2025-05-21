@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 6659614796100041902}
   - component: {fileID: 4545202378875882843}
   - component: {fileID: 7557257250123439059}
-  m_Layer: 5
+  m_Layer: 8
   m_Name: LevelText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -91,7 +91,7 @@ GameObject:
   - component: {fileID: 1354009972693090270}
   - component: {fileID: 2655623395838471090}
   - component: {fileID: 5721814335377996335}
-  m_Layer: 5
+  m_Layer: 8
   m_Name: Canvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -195,7 +195,7 @@ GameObject:
   - component: {fileID: 4528787722583023158}
   - component: {fileID: 4955022395473394726}
   - component: {fileID: 6702534522670996891}
-  m_Layer: 5
+  m_Layer: 8
   m_Name: ExperiencePopup
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -272,7 +272,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3246194835671717889}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: EnemyUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -306,7 +306,7 @@ GameObject:
   - component: {fileID: 4938596916715868422}
   - component: {fileID: 3912870306594946825}
   - component: {fileID: 835576682600454276}
-  m_Layer: 5
+  m_Layer: 8
   m_Name: HPText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -388,7 +388,7 @@ GameObject:
   - component: {fileID: 7543073337826612033}
   - component: {fileID: 3726971387995842497}
   - component: {fileID: 4518594551691096897}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: EnemyPref
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -579,7 +579,7 @@ GameObject:
   - component: {fileID: 2535464373072215468}
   - component: {fileID: 1192630001941368700}
   - component: {fileID: 2592326660137181010}
-  m_Layer: 5
+  m_Layer: 8
   m_Name: damagePopup
   m_TagString: Untagged
   m_Icon: {fileID: 0}
