@@ -328,7 +328,7 @@ public class HealthSystem : MonoBehaviour
     // –асчет награды за опыт
     private float CalculateExperienceReward()
     {
-        return 50f + level * 10f; // ѕримерна€ формула: базовый опыт + бонус за уровень
+        return 50f + level * 0.5f; // ѕримерна€ формула: базовый опыт + бонус за уровень
     }
 
 

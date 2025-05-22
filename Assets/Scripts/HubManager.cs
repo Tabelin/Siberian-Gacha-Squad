@@ -328,10 +328,6 @@ public class HubManager : MonoBehaviour
                         {
                             manager.StartAttack(attackTarget); // Отправляем команду атаки с указанием цели
                         }
-                        else
-                        {
-                            Debug.LogWarning("Ближайший враг не найден!");
-                        }
                         break;
 
                     case "Gather":
@@ -343,13 +339,8 @@ public class HubManager : MonoBehaviour
                         break;
 
                     default:
-                        Debug.LogWarning($"Неизвестная команда: {command}");
                         break;
                 }
-            }
-            else
-            {
-                Debug.LogError("Компонент CharacterManager не найден!");
             }
         }
     }
@@ -374,13 +365,10 @@ public class HubManager : MonoBehaviour
                 CharacterManager manager = character.GetComponent<CharacterManager>();
                 if (manager != null)
                 {
+                    manager.SetControlledByPlayer(true); // Теперь корректно
                     manager.MoveToTarget(targetPosition); // Отправляем команду на движение
 
-                    // Если персонаж занят важным действием, предупреждаем об этом
-                    if (manager.isAttacking || manager.isGathering)
-                    {
-                        Debug.LogWarning($"Персонаж {character.name} прерывает важное действие для выполнения команды игрока."); 
-                    }
+                    Debug.Log("not ");
                 }
                 else
                 {
@@ -388,9 +376,17 @@ public class HubManager : MonoBehaviour
                 }
             }
         }
-        else
+        // Сброс управления, если игрок не даёт команды
+        if (selectedCharacters.Count > 0 && Input.GetMouseButtonUp(1))
         {
-            Debug.LogWarning("Клик мыши не попал на поверхность земли!");
+            foreach (GameObject character in selectedCharacters)
+            {
+                CharacterManager manager = character.GetComponent<CharacterManager>();
+                if (manager != null)
+                {
+                    manager.StartPatrolling();
+                }
+            }
         }
     }
 
@@ -451,9 +447,10 @@ public class HubManager : MonoBehaviour
         }
 
         // Направление выбранных персонажей на место клика мыши (правая кнопка мыши)
-        if (Input.GetMouseButtonDown(1)) // Проверяем клик правой кнопкой мыши
+        if (Input.GetMouseButtonDown(1) && selectedCharacters.Count > 0)
         {
-            SendMoveCommandToSelectedCharacters(); // Вызываем метод для направления персонажей
+            SendMoveCommandToSelectedCharacters();
+            
         }
 
         // Отправка команд выбранным персонажам

@@ -21,20 +21,23 @@ public class CharacterManager : MonoBehaviour
     public float rangedAttackCooldown = 2f; // Задержка для дальней атаки
     private float attackTimer = 0f;
     private float currentAttackCooldown = 0f;
-
+    public float maxStuckTime = 5f; // Через сколько времени считаем, что персонаж застрял
+    public float stuckTimer = 0f;
+    private Rigidbody rb;
     // Центральная точка патрулирования
     private Vector3 patrolCenter;
 
-    // Текущая цель патрулирования
-    private Vector3 currentPatrolTarget;
 
-    // Целевая точка для движения (приоритетная команда игрока)
-    private Vector3 moveTarget;
+    private Vector3 currentPatrolTarget;    // Текущая цель патрулирования
+    private Vector3 lastPosition;           // Для определения реального перемещения
+    private Vector3 moveTarget;             // Целевая точка для движения (приоритетная команда игрока)
+
 
     public bool isPatrolling = true; // Патрулирование
     public bool isAttacking = false; // Атака
     public bool isGathering = false; // Добыча ресурсов
     public bool isIdle = false; // Бездействие
+    public bool isControlledByPlayer = false; // Флаг управления игроком
 
     // Корутина патрулирования
     private Coroutine patrolCoroutine;
@@ -80,17 +83,87 @@ public class CharacterManager : MonoBehaviour
         patrolCenter = transform.position;
         // Начинаем патрулирование
         StartPatrolling();
+
+        rb = GetComponent<Rigidbody>();
+        lastPosition = transform.position;
     }
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(1))
+
+        if (moveTarget != Vector3.zero)
         {
-            HandlePlayerClick();
+            float distanceToTarget = Vector3.Distance(transform.position, moveTarget);
+
+            if (distanceToTarget < 4f)
+            {
+                // Цель достигнута → сбрасываем флаг
+                moveTarget = Vector3.zero;
+                isControlledByPlayer = false;
+                StartPatrolling();
+                return;
+            }
+            else
+            {
+                // 🚶‍♂️ Продолжаем движение к цели, даже если под управлением
+                MoveToTarget(moveTarget);
+            }
+
         }
 
+        if (isControlledByPlayer && moveTarget != Vector3.zero)
+        {
+            float distanceToTarget = Vector3.Distance(transform.position, moveTarget);
+            // Проверяем, действительно ли мы двигаемся к цели
+            float distanceMoved = Vector3.Distance(transform.position, lastPosition);
+
+            if (distanceMoved < 0.02f) // Перемещение почти нулевое
+            {
+                stuckTimer += Time.deltaTime;
+
+                if (stuckTimer >= maxStuckTime)
+                {
+                    Debug.LogWarning("Персонаж застрял в толпе! Выход из режима управления.");
+
+                    isControlledByPlayer = false;
+                    moveTarget = Vector3.zero;
+                    stuckTimer = 0f;
+                    StartPatrolling();
+                }
+            }
+            else
+            {
+                stuckTimer = 0f; // Сброс, если реально двигаемся
+            }
+
+            lastPosition = transform.position;
+        }
+
+        if (isControlledByPlayer)
+        {
+            return; // Если персонаж под контролем игрока → не запускаем автоматические действия
+        }
+
+        // 🚨 Сначала проверяем, есть ли враги в радиусе
+        if (!isAttacking) // Не проверяем, если уже в режиме атаки
+        {
+            DetectEnemies(); // Обнаруживает врагов и может установить новую атаку
+
+            if (attackTarget != null)
+            {
+                isAttacking = true;
+                isPatrolling = false;
+                moveTarget = Vector3.zero; // 🧨 Сбрасываем moveTarget, если появился враг
+                return; // Прерываем остальные действия
+            }
+        }
         if (isAttacking && attackTarget != null)
         {
+            if (isControlledByPlayer)
+            {
+                return; // vv
+            }
+
             // Проверяем, находится ли цель в detectionRadius
             if (attackTarget.activeInHierarchy)
             {
@@ -100,6 +173,7 @@ public class CharacterManager : MonoBehaviour
                 if (distanceToTarget > detectionRadius)
                 {
                     StopAttack();
+                    
                 }
                 else if (distanceToTarget > rangedAttackRange)
                 {
@@ -113,26 +187,17 @@ public class CharacterManager : MonoBehaviour
                 StopAttack();
                 return;
             }
-
+            
             // Атака, если цель в зоне
             AttackLogic();
+            DetectEnemies(); // Обнаружение врагов
         }
         // Если цель недоступна, но атака всё ещё активна
         else if (isAttacking && attackTarget == null)
         {
+          
             StopAttack();
-        }
-        else if (moveTarget != Vector3.zero)
-        {
-            isPatrolling = false; // Останавливаем патрулирование
-            MoveToTarget(moveTarget);
-
-            // Если достигли цели, начинаем патрулирование
-            if (Vector3.Distance(transform.position, moveTarget) < 2.1f)
-            {
-                moveTarget = Vector3.zero;
-                StartPatrolling();
-            }
+            return;
         }
         else if (isIdle)
         {
@@ -145,9 +210,24 @@ public class CharacterManager : MonoBehaviour
         }
     }
 
+
+    public void SetControlledByPlayer(bool controlled)
+    {
+        isControlledByPlayer = controlled;
+        Debug.LogError("controll!");
+    }
+
+
+
     // Метод для автоматического обнаружения врагов
     private void DetectEnemies()
     {
+        if (isControlledByPlayer)
+        {
+            return; // Не обнаруживаем врагов, если персонаж под контролем игрока
+        }
+
+
         Collider[] enemies = Physics.OverlapSphere(transform.position, detectionRadius, enemyLayerMask);
 
         if (enemies.Length == 0)
@@ -203,6 +283,12 @@ public class CharacterManager : MonoBehaviour
     // Объединенная логика атаки
     private void AttackLogic()
     {
+        if (isControlledByPlayer)
+        {
+            return; // нееет атак с контролем
+        }
+
+
         if (attackTarget == null || !attackTarget.activeInHierarchy)
         {
             StopAttack(); // Если цель недоступна, останавливаем атаку
@@ -283,6 +369,7 @@ public class CharacterManager : MonoBehaviour
             isAttacking = false;
             isGathering = false;
             isIdle = false;
+            isControlledByPlayer = false;
 
             SelectNewPatrolPoint(); // Выбираем первую точку патрулирования
             patrolCoroutine = StartCoroutine(PatrolRoutine());
@@ -351,7 +438,8 @@ public class CharacterManager : MonoBehaviour
         isAttacking = false;
         attackTarget = null;
         attackTimer = 0f; // Сбрасываем таймер для атаки
-
+        moveTarget = Vector3.zero; // 🚫 Сбрасываем moveTarget
+        isControlledByPlayer = false;
         if (!isPatrolling && !isGathering && !isIdle)
         {
             StartPatrolling(); // Если других действий нет, возобновляем патрулирование
@@ -405,7 +493,6 @@ public class CharacterManager : MonoBehaviour
         StopPatrol();
         isAttacking = false;
         isGathering = false;
-        
 
     }
 
@@ -504,7 +591,7 @@ public class CharacterManager : MonoBehaviour
 
             // Останавливаем текущее патрулирование
             StopPatrol();
-
+            //isControlledByPlayer = false;
             // Устанавливаем цель для NavMeshAgent
             if (navMeshAgent != null)
             {
@@ -579,21 +666,6 @@ public class CharacterManager : MonoBehaviour
         {
             Destroy(item); // Уничтожаем предмет
             Debug.Log("Предмет подобран!");
-        }
-    }
-    // Обработка клика игрока
-    private void HandlePlayerClick()
-    {
-        isAttacking = false; // 🔁 Прерываем атаку
-        isPatrolling = false;
-        isGathering = false;
-        isIdle = false;
-
-        // Пример: игрок кликнул на точку → двигаемся к ней
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit))
-        {
-            moveTarget = hit.point;
         }
     }
 }
