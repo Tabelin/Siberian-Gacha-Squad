@@ -22,7 +22,7 @@ public class CharacterData
     public int level;
     public int maxLevel;
     public float experience;
-    public float experienceToNextLevel;
+    public float experienceToNextLevel = 1000f;
 
     // поле указывает, был ли персонаж принят или еще находится в ряду персонажей
     public bool isAccepted;
