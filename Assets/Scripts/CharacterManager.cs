@@ -59,12 +59,8 @@ public class CharacterManager : MonoBehaviour
     private GameObject nearestItem;// Ближайший подбираемый предмет
     private GameObject targetResource; // Цель добычи
     private GameObject targetDrill; // Цель — бур
-    public GameObject autoDrillPrefab; // Назначь в инспекторе
-
-    private Quaternion drillRotation;
 
 
-    private float drillCostIron = 50f;
     // Начальная точка спавна
     private Transform spawnPoint;
     // LayerMask для врагов
@@ -78,14 +74,7 @@ public class CharacterManager : MonoBehaviour
 
 
 
-    void Awake()
-    {
-        // Сохраняем поворот из префаба
-        if (autoDrillPrefab != null)
-        {
-            drillRotation = autoDrillPrefab.transform.rotation;
-        }
-    }
+    
 
     void Start()
     {
@@ -875,27 +864,14 @@ public class CharacterManager : MonoBehaviour
             Debug.Log($"Начата добыча из бура {drill.name}");
         });
     }
-    public void TryPlaceDrill()
+  
+    public bool CanAffordDrill(float cost, ResourceType type)
     {
-        if (inventory.HasResource(ResourceType.Metal, drillCostIron))
-        {
-            inventory.RemoveResource(ResourceType.Metal, drillCostIron);
-
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out RaycastHit hit))
-            {
-                Vector3 spawnPos = hit.point + Random.insideUnitSphere * 0.5f;
-                GameObject drillGO = Instantiate(autoDrillPrefab, spawnPos, drillRotation);
-                Debug.Log("Бур установлен!");
-
-                StartPatrolling(); // После установки — патрулирование
-            }
-        }
-        else
-        {
-            Debug.Log("Недостаточно железа для установки бура.");
-            healthSystem.ShowExperiencePopup(0f); // Можно показать попап через HealthSystem
-        }
+        return inventory.HasResource(type, cost);
     }
-    
+
+    public void PayForResource(float cost, ResourceType type)
+    {
+        inventory.RemoveResource(type, cost);
+    }
 }

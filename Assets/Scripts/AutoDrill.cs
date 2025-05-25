@@ -6,21 +6,23 @@ public class AutoDrill : MonoBehaviour
     [Header("Настройки добычи")]
     public ResourceType resourceType = ResourceType.Metal;
     public float miningSpeed = 5f; // Время между сбором
-    public float amountPerGather = 10f; // Сколько добывает за раз
+    public float amountPerGather = 2f; // Сколько добывает за раз
     public float capacity = 100f; // Максимальное хранилище
     public float weightPerUnit = 2f; // Для CharacterInventory
 
     private float storedResources = 0f;
-    private bool isMining = true;
 
-    private void Start()
+    void Start()
     {
+        transform.rotation = Quaternion.Euler(-90f, 0f, -90f); // Фиксированный поворот
+        transform.position += Vector3.up * 3f;
         StartCoroutine(MineResource());
     }
 
+
     private IEnumerator MineResource()
     {
-        while (isMining)
+        while (true)
         {
             if (storedResources < capacity)
             {
@@ -46,6 +48,4 @@ public class AutoDrill : MonoBehaviour
 
     // Позволяет узнать, есть ли что забрать
     public bool HasResources => storedResources > 0;
-
-    public float GetStoredAmount() => storedResources;
 }

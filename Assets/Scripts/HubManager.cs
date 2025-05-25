@@ -40,7 +40,10 @@ public class HubManager : MonoBehaviour
     // Список выбранных персонажей
     private List<GameObject> selectedCharacters = new List<GameObject>();
 
+
+    public GameObject autoDrillPrefab;
     private GameObject selectedResource;
+
     // Позиция начала выделения
     private Vector3 selectionStart;
 
@@ -53,6 +56,7 @@ public class HubManager : MonoBehaviour
     // Камера
     private Camera mainCamera;
 
+    
     // Слои для UI
     private const int UI_LAYER = 5; // Стандартный слой для UI (например, "UI")
     private const int IGNORE_RAYCAST_LAYER = 21; // Слой IgnoreRaycast
@@ -72,6 +76,7 @@ public class HubManager : MonoBehaviour
 
     void Start()
     {
+        
         if (characterPrefab == null || mainSpawnPoint == null)
         {
             Debug.LogError("Необходимо назначить CharacterPrefab и MainSpawnPoint!");
@@ -124,12 +129,42 @@ public class HubManager : MonoBehaviour
             {
                 if (hit.collider.CompareTag("Mine"))
                 {
+                    GameObject mineGO = hit.collider.gameObject;
+                    MiniMine mineScript = mineGO.GetComponent<MiniMine>();
+
+                    // Проверяем, нет ли уже установленного бура
+                    if (mineScript.HasDrill())
+                    {
+                        Debug.Log("На этой шахте уже есть бур.");
+                        return;
+                    }
+
+                    // Проверяем, может ли один из персонажей оплатить установку
                     foreach (GameObject character in selectedCharacters)
                     {
                         CharacterManager manager = character.GetComponent<CharacterManager>();
-                        if (manager != null)
+                        if (manager != null && manager.CanAffordDrill(50f, ResourceType.Metal))
                         {
-                            manager.TryPlaceDrill(); // ✅ Вызываем установку бура
+                            Vector3 spawnPosition = mineGO.transform.position;
+
+                            // Спавним бур с поворотом родителя (MiniMine)
+                            GameObject drillGO = Instantiate(
+                                autoDrillPrefab,
+                                spawnPosition,
+                                Quaternion.Euler(-90f, 0f, 0f), // ← Берём поворот шахты
+                                mineGO.transform         // ← Делаем дочерним объектом
+                            );
+
+                            drillGO.transform.localPosition = Vector3.zero; // Точно в центр
+                            drillGO.name = "AutoDrill";
+
+                            // Забираем ресурсы у персонажа
+                            manager.PayForResource(50f, ResourceType.Metal);
+
+                            // Сообщаем шахте, что бур установлен
+                            mineScript.AssignDrill(drillGO);
+
+                            break; // Один бур на шахту — достаточно проверить одного персонажа
                         }
                     }
                 }
@@ -210,11 +245,6 @@ public class HubManager : MonoBehaviour
         // Каждый кадр обновляем направление персонажей
         UpdateCharacterRotation();
     }
-
-
-
-
-
 
 
     // Метод для поиска ближайшего врага

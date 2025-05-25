@@ -726,7 +726,7 @@ MonoBehaviour:
   maxStuckTime: 5
   stuckTimer: 0
   gatherTimer: 0
-  gatherCooldown: 2
+  gatherCooldown: 0.3
   resourceTakeAmount: 20
   resourceTakeCooldown: 2
   resourceTakeTimer: 2
@@ -736,7 +736,6 @@ MonoBehaviour:
   isIdle: 1
   isControlledByPlayer: 0
   isHarvestingDrill: 0
-  autoDrillPrefab: {fileID: 656425859364168209, guid: 43ee998e50f19c24d9cd428d2ae438cd, type: 3}
   enemyLayerMask:
     serializedVersion: 2
     m_Bits: 256
