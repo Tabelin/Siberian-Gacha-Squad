@@ -61,6 +61,8 @@ public class CharacterManager : MonoBehaviour
     private GameObject targetDrill; // Цель — бур
     public GameObject autoDrillPrefab; // Назначь в инспекторе
 
+    private Quaternion drillRotation;
+
 
     private float drillCostIron = 50f;
     // Начальная точка спавна
@@ -73,7 +75,17 @@ public class CharacterManager : MonoBehaviour
     // Компонент HealthSystem для здоровья персонажа
     public HealthSystem healthSystem;
     private CharacterInventory inventory;
-    
+
+
+
+    void Awake()
+    {
+        // Сохраняем поворот из префаба
+        if (autoDrillPrefab != null)
+        {
+            drillRotation = autoDrillPrefab.transform.rotation;
+        }
+    }
 
     void Start()
     {
@@ -873,7 +885,7 @@ public class CharacterManager : MonoBehaviour
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 Vector3 spawnPos = hit.point + Random.insideUnitSphere * 0.5f;
-                GameObject drillGO = Instantiate(autoDrillPrefab, spawnPos, Quaternion.identity);
+                GameObject drillGO = Instantiate(autoDrillPrefab, spawnPos, drillRotation);
                 Debug.Log("Бур установлен!");
 
                 StartPatrolling(); // После установки — патрулирование
