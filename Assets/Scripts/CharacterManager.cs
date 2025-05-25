@@ -15,7 +15,7 @@ public class CharacterManager : MonoBehaviour
     private float meleeAttackRange = 2f;  // Радиус дальней атаки
     private float rangedAttackRange = 15f; // Время задержки между атаками
     public float detectionRadius = 20f; // Радиус обнаружения
-
+    public float gatheringRange = 3f;
 
     public float meleeAttackCooldown = 1f; // Задержка для ближней атаки
     public float rangedAttackCooldown = 2f; // Задержка для дальней атаки
@@ -23,6 +23,12 @@ public class CharacterManager : MonoBehaviour
     private float currentAttackCooldown = 0f;
     public float maxStuckTime = 5f; // Через сколько времени считаем, что персонаж застрял
     public float stuckTimer = 0f;
+    public float gatherTimer = 0f;
+    public float gatherCooldown = 2f; // Время между сбором
+
+    float experiencePerResource = 10f;
+    float gatherAmountPerAction = 1f;
+
     private Rigidbody rb;
     // Центральная точка патрулирования
     private Vector3 patrolCenter;
@@ -44,7 +50,7 @@ public class CharacterManager : MonoBehaviour
 
     // Ближайший подбираемый предмет
     private GameObject nearestItem;
-
+    private GameObject targetResource; // Цель добычи
     // Начальная точка спавна
     private Transform spawnPoint;
     // LayerMask для врагов
@@ -54,13 +60,18 @@ public class CharacterManager : MonoBehaviour
     private UnityEngine.AI.NavMeshAgent navMeshAgent;
     // Компонент HealthSystem для здоровья персонажа
     public HealthSystem healthSystem;
+    private CharacterInventory inventory;
     // Атакуемый объект
     private GameObject attackTarget;
 
     void Start()
     {
-        
 
+        inventory = GetComponent<CharacterInventory>();
+        if (inventory == null)
+        {
+            inventory = gameObject.AddComponent<CharacterInventory>();
+        }
         // Получаем компонент NavMeshAgent
         navMeshAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
         if (navMeshAgent == null)
@@ -90,13 +101,28 @@ public class CharacterManager : MonoBehaviour
 
     void Update()
     {
+        if (isGathering && targetResource != null)
+        {
+
+            GatheringLogic();
+            isControlledByPlayer = false;
+            return;
+        }
+        else
+        {
+            // 🚶‍♂️ Продолжаем движение к цели, даже если под управлением
+            MoveToTarget(moveTarget);
+        }
 
         if (moveTarget != Vector3.zero)
         {
             float distanceToTarget = Vector3.Distance(transform.position, moveTarget);
 
+            
+
             if (distanceToTarget < 4f)
             {
+
                 // Цель достигнута → сбрасываем флаг
                 moveTarget = Vector3.zero;
                 isControlledByPlayer = false;
@@ -123,8 +149,7 @@ public class CharacterManager : MonoBehaviour
 
                 if (stuckTimer >= maxStuckTime)
                 {
-                    Debug.LogWarning("Персонаж застрял в толпе! Выход из режима управления.");
-
+ 
                     isControlledByPlayer = false;
                     moveTarget = Vector3.zero;
                     stuckTimer = 0f;
@@ -214,10 +239,82 @@ public class CharacterManager : MonoBehaviour
     public void SetControlledByPlayer(bool controlled)
     {
         isControlledByPlayer = controlled;
-        Debug.LogError("controll!");
+    }
+
+    private void GatheringLogic()
+    {
+        if (isControlledByPlayer)
+        {
+            return; // нееет копать с контролем
+        }
+
+        if (targetResource == null || !targetResource.activeInHierarchy)
+        {
+            StopGathering();
+            StartPatrolling();
+            return;
+        }
+
+        float distanceToResource = Vector3.Distance(transform.position, targetResource.transform.position);
+
+        if (distanceToResource > gatheringRange)
+        {
+            MoveToTarget(targetResource.transform.position);
+            return;
+        }
+        else
+        {
+            navMeshAgent.SetDestination(transform.position); // Останавливаемся
+        }
+
+        gatherTimer += Time.deltaTime;
+
+        if (gatherTimer >= gatherCooldown)
+        {
+            Resource resourceScript = targetResource.GetComponent<Resource>();
+
+            
+                float remainingSpace = inventory.GetRemainingSpace();
+                float possibleGather = Mathf.Min(remainingSpace / resourceScript.weightPerUnit, gatherAmountPerAction);
+
+                if (possibleGather <= 0)
+                {
+                    Debug.Log("Инвентарь полон!");
+                    StopGathering();
+                    StartPatrolling();
+                    return;
+                }
+
+                float gathered = resourceScript.Gather(possibleGather);
+                if (gathered > 0)
+                {
+                    Debug.Log("ресурс!");
+                    inventory.AddResource(resourceScript.resourceType, gathered);
+                    float expReward = gathered * experiencePerResource;
+                    healthSystem.GainExperience(expReward); // Обычный GainExperience
+                    healthSystem.ShowExperiencePopup(expReward); // ✅ Вызываем из HealthSystem
+                }
+
+
+                if (resourceScript.isDepleted)
+                {
+                    Debug.Log("Ресурс исчерпан");
+                    StopGathering();
+                    StartPatrolling();
+                }
+
+                gatherTimer = 0f;
+            
+        }
     }
 
 
+    private void StopGathering()
+    {
+        isGathering = false;
+        targetResource = null;
+        gatherTimer = 0f;
+    }
 
     // Метод для автоматического обнаружения врагов
     private void DetectEnemies()
@@ -446,17 +543,22 @@ public class CharacterManager : MonoBehaviour
         }
     }
 
-    // Метод для начала добычи ресурсов
-    public void StartGathering()
+    public void StartGathering(GameObject resource)
     {
-        StopAllActions();
+        ChangeState(() =>
+        {
+            StopAllActions();
 
-        isPatrolling = false;
-        isAttacking = false;
-        isGathering = true;
-        isIdle = false;
+            targetResource = resource;
+            isGathering = true;
+            isPatrolling = false;
+            isAttacking = false;
+            isIdle = false;
 
-        Debug.Log("Персонаж начинает добывать ресурсы!");
+            isControlledByPlayer = false; //xm
+
+            Debug.Log($"Персонаж начал добывать {resource.name}");
+        });
     }
 
 
@@ -562,7 +664,6 @@ public class CharacterManager : MonoBehaviour
     // Метод для добычи ресурсов
     private void Gather()
     {
-        // Здесь можно добавить логику добычи ресурсов (например, взаимодействие с объектом)
         Debug.Log("Персонаж добывает ресурсы!");
     }
 

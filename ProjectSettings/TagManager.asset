@@ -9,6 +9,7 @@ TagManager:
   - Item
   - EnemySpawnPoint
   - Enemy
+  - Resource
   layers:
   - Default
   - TransparentFX

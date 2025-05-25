@@ -30,6 +30,13 @@ public class CharacterData
     public Sprite sprite;
 }
 
+[System.Serializable]
+public struct ResourceData
+{
+    public ResourceType type;
+    public float amount;
+}
+
 
 
 

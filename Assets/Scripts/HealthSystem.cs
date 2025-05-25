@@ -10,6 +10,7 @@ public class HealthSystem : MonoBehaviour
     public float currentHealth; // Текущее здоровье
     public float attackPower;// Сила атаки
     public float defense;// Защита
+    public float CarryWeight;
     // Имя персонажа (для идентификации)
     public string characterName;
     // Уровень объекта
@@ -21,6 +22,7 @@ public class HealthSystem : MonoBehaviour
     public Rarity rarity;
     // Флаг для проверки жизни
     public bool isAlive = true;
+    private CharacterInventory characterInventory;
 
 
     private float experience = 0f;// Опыт персонажа   
@@ -63,7 +65,7 @@ public class HealthSystem : MonoBehaviour
         }
     }
     // Метод для инициализации
-    public void InitializeHealth(int initialMaxHealth, int initialCurrentHealth, int initialAttackPower, int initialDefense, int initialLevel, int initialMaxLevel, float initialExperience, float initialExperienceToNextLevel, string name)
+    public void InitializeHealth(int initialMaxHealth, int initialCurrentHealth, int initialAttackPower, int initialDefense, int initialLevel, int initialMaxLevel, float initialExperience, float initialExperienceToNextLevel, float initialCarryWeight, string name)
     {
         maxHealth = initialMaxHealth;
         currentHealth = initialCurrentHealth;
@@ -74,6 +76,8 @@ public class HealthSystem : MonoBehaviour
         experience = initialExperience;
         experienceToNextLevel = initialExperienceToNextLevel;
         characterName = name;
+        CarryWeight = initialCarryWeight;
+
 
         if (hpText != null && levelText != null)
         {
@@ -258,8 +262,9 @@ public class HealthSystem : MonoBehaviour
         }
     }
 
+
     // Метод для показа попапа опыта
-    private void ShowExperiencePopup(float exp)
+    public void ShowExperiencePopup(float exp)
     {
         Text expClone = Instantiate(experiencePopup, experiencePopup.transform.parent);
         expClone.text = $"+{exp:F0} XP";

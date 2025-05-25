@@ -94,6 +94,7 @@ GameObject:
   - component: {fileID: 1995877622333472137}
   - component: {fileID: 7294474397955514400}
   - component: {fileID: 6168539937531707809}
+  - component: {fileID: 1431154051214631255}
   m_Layer: 7
   m_Name: CharacterPrefab
   m_TagString: Character
@@ -700,6 +701,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1740753109512925805, guid: 08c05412b3705dc458685084a8b82001, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6168539937531707809}
+    - targetCorrespondingSourceObject: {fileID: 1740753109512925805, guid: 08c05412b3705dc458685084a8b82001, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1431154051214631255}
   m_SourcePrefab: {fileID: 100100000, guid: 08c05412b3705dc458685084a8b82001, type: 3}
 --- !u!114 &6077605062043676161
 MonoBehaviour:
@@ -716,12 +720,17 @@ MonoBehaviour:
   moveSpeed: 3.73
   patrolRadius: 12.39
   detectionRadius: 19
+  gatheringRange: 3
   meleeAttackCooldown: 0.1
   rangedAttackCooldown: 0.1
+  maxStuckTime: 5
+  stuckTimer: 0
+  gatherCooldown: 2
   isPatrolling: 0
   isAttacking: 0
   isGathering: 0
   isIdle: 1
+  isControlledByPlayer: 0
   enemyLayerMask:
     serializedVersion: 2
     m_Bits: 256
@@ -833,3 +842,16 @@ MonoBehaviour:
   damagePopup: {fileID: 4861892465003592954}
   experiencePopup: {fileID: 7465544114893241422}
   levelPopup: {fileID: 4289657268933530164}
+--- !u!114 &1431154051214631255
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1702766904372811578}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58799cd3bb032634a958e2bb2c23e8e5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxCarryWeight: 100

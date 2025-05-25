@@ -40,6 +40,7 @@ public class HubManager : MonoBehaviour
     // Список выбранных персонажей
     private List<GameObject> selectedCharacters = new List<GameObject>();
 
+    private GameObject selectedResource;
     // Позиция начала выделения
     private Vector3 selectionStart;
 
@@ -85,6 +86,106 @@ public class HubManager : MonoBehaviour
         // Загружаем персонажей из SaveData
         LoadCharactersFromSaveData();
     }
+
+
+
+
+    void Update()
+    {
+        // Сброс выбора при клике вне персонажей
+        if (Input.GetMouseButtonUp(0) && !IsClickOnCharacter())
+        {
+            EndSelection();
+        }
+
+        // Начало выделения при нажатии ЛКМ
+        if (Input.GetMouseButtonDown(0))
+        {
+            StartSelection();
+        }
+
+        // Продолжение выделения при удержании ЛКМ
+        if (Input.GetMouseButton(0) && isSelecting)
+        {
+            ContinueSelection();
+        }
+
+        // Завершение выделения при отпускании ЛКМ
+        if (Input.GetMouseButtonUp(0))
+        {
+            EndSelection();
+        }
+
+
+        // Направление выбранных персонажей на место клика мыши (правая кнопка мыши)
+        if (selectedCharacters.Count > 0 && Input.GetMouseButtonDown(1))
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                // Проверяем, нажат ли на ресурс
+                if (hit.collider.CompareTag("Resource"))
+                {
+                    GameObject resource = hit.collider.gameObject;
+
+                    foreach (GameObject character in selectedCharacters)
+                    {
+                        CharacterManager manager = character.GetComponent<CharacterManager>();
+                        if (manager != null)
+                        {
+                            manager.SetControlledByPlayer(true); // Переводим в режим управления
+                            manager.StartGathering(resource);     // 🚀 Теперь передаём параметр
+                        }
+                    }
+                }
+                else
+                {
+                    // Если не по ресурсу — обычное движение
+                    foreach (GameObject character in selectedCharacters)
+                    {
+                        CharacterManager manager = character.GetComponent<CharacterManager>();
+                        if (manager != null)
+                        {
+                            manager.SetControlledByPlayer(true);
+                            manager.MoveToTarget(hit.point);
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+        // Отправка команд выбранным персонажам
+        if (Input.GetKeyDown(KeyCode.T)) // Атаковать
+        {
+            SendCommand("Attack");
+        }
+
+        if (Input.GetKeyDown(KeyCode.G)) // Добывать ресурсы
+        {
+            SendCommand("Gather");
+        }
+
+        if (Input.GetKeyDown(KeyCode.C)) // Взять контроль
+        {
+            SendCommand("TakeControl");
+        }
+
+        if (Input.GetKeyDown(KeyCode.P)) // Начать патрулирование
+        {
+            SendCommand("Patrol");
+        }
+
+        // Каждый кадр обновляем направление персонажей
+        UpdateCharacterRotation();
+    }
+
+
+
+
+
+
 
     // Метод для поиска ближайшего врага
     private GameObject FindClosestEnemy()
@@ -198,6 +299,7 @@ public class HubManager : MonoBehaviour
                     initialMaxLevel: character.maxLevel,
                     initialExperience: character.experience, // Передаем опыт
                     initialExperienceToNextLevel: character.experienceToNextLevel, // Передаем требуемый опыт
+                    initialCarryWeight: character.carryWeight,
                     name: character.name
                 );
             }
@@ -331,7 +433,16 @@ public class HubManager : MonoBehaviour
                         break;
 
                     case "Gather":
-                        manager.StartGathering();
+                        // Убедись, что resource определён
+                        if (selectedResource != null)
+                        {
+                            manager.SetControlledByPlayer(true);
+                            manager.StartGathering(selectedResource); // Теперь передаём конкретный ресурс
+                        }
+                        else
+                        {
+                            Debug.LogWarning("Нет выбранного ресурса для добычи");
+                        }
                         break;
 
                     case "TakeControl":
@@ -344,53 +455,7 @@ public class HubManager : MonoBehaviour
             }
         }
     }
-    // Метод для направления выбранных персонажей на место клика мыши
-    public void SendMoveCommandToSelectedCharacters()
-    {
-        if (selectedCharacters.Count == 0)
-        {
-            Debug.LogWarning("Никто не выбран для движения!");
-            return;
-        }
-
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-
-        if (Physics.Raycast(ray, out hit, Mathf.Infinity, LayerMask.GetMask("Ground")))
-        {
-            Vector3 targetPosition = hit.point;
-
-            foreach (GameObject character in selectedCharacters)
-            {
-                CharacterManager manager = character.GetComponent<CharacterManager>();
-                if (manager != null)
-                {
-                    manager.SetControlledByPlayer(true); // Теперь корректно
-                    manager.MoveToTarget(targetPosition); // Отправляем команду на движение
-
-                    Debug.Log("not ");
-                }
-                else
-                {
-                    Debug.LogError("Компонент CharacterManager не найден!");
-                }
-            }
-        }
-        // Сброс управления, если игрок не даёт команды
-        if (selectedCharacters.Count > 0 && Input.GetMouseButtonUp(1))
-        {
-            foreach (GameObject character in selectedCharacters)
-            {
-                CharacterManager manager = character.GetComponent<CharacterManager>();
-                if (manager != null)
-                {
-                    manager.StartPatrolling();
-                }
-            }
-        }
-    }
-
-
+    
 
     // Метод для обновления направления персонажей
     private void UpdateCharacterRotation()
@@ -420,63 +485,7 @@ public class HubManager : MonoBehaviour
         characterObject.transform.rotation = Quaternion.Lerp(characterObject.transform.rotation, targetRotation, Time.deltaTime * 5f);
     }
 
-    void Update()
-    {
-        // Сброс выбора при клике вне персонажей
-        if (Input.GetMouseButtonUp(0) && !IsClickOnCharacter())
-        {
-            EndSelection();
-        }
-
-        // Начало выделения при нажатии ЛКМ
-        if (Input.GetMouseButtonDown(0))
-        {
-            StartSelection();
-        }
-
-        // Продолжение выделения при удержании ЛКМ
-        if (Input.GetMouseButton(0) && isSelecting)
-        {
-            ContinueSelection();
-        }
-
-        // Завершение выделения при отпускании ЛКМ
-        if (Input.GetMouseButtonUp(0))
-        {
-            EndSelection();
-        }
-
-        // Направление выбранных персонажей на место клика мыши (правая кнопка мыши)
-        if (Input.GetMouseButtonDown(1) && selectedCharacters.Count > 0)
-        {
-            SendMoveCommandToSelectedCharacters();
-            
-        }
-
-        // Отправка команд выбранным персонажам
-        if (Input.GetKeyDown(KeyCode.T)) // Атаковать
-        {
-            SendCommand("Attack");
-        }
-
-        if (Input.GetKeyDown(KeyCode.G)) // Добывать ресурсы
-        {
-            SendCommand("Gather");
-        }
-
-        if (Input.GetKeyDown(KeyCode.C)) // Взять контроль
-        {
-            SendCommand("TakeControl");
-        }
-
-        if (Input.GetKeyDown(KeyCode.P)) // Начать патрулирование
-        {
-            SendCommand("Patrol");
-        }
-
-        // Каждый кадр обновляем направление персонажей
-        UpdateCharacterRotation();
-    }
+    
 
     // Проверка, попал ли клик на персонажа
     private bool IsClickOnCharacter()

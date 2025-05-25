@@ -92,6 +92,7 @@ public class EnemySpawner : MonoBehaviour
                             initialMaxLevel: enemyMaxLevel,
                             initialExperience: 0f,
                             initialExperienceToNextLevel: 0f,
+                            initialCarryWeight: 0f,
                             name: "Enemy"
                         );
 
