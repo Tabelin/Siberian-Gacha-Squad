@@ -25,6 +25,10 @@ public class CharacterManager : MonoBehaviour
     public float stuckTimer = 0f;
     public float gatherTimer = 0f;
     public float gatherCooldown = 2f; // Время между сбором
+    public float resourceTakeAmount = 20f;
+    public float resourceTakeCooldown = 2f;
+    public float resourceTakeTimer = 2f;
+
 
     float experiencePerResource = 10f;
     float gatherAmountPerAction = 1f;
@@ -44,13 +48,21 @@ public class CharacterManager : MonoBehaviour
     public bool isGathering = false; // Добыча ресурсов
     public bool isIdle = false; // Бездействие
     public bool isControlledByPlayer = false; // Флаг управления игроком
+    public bool isHarvestingDrill = false;
+
 
     // Корутина патрулирования
     private Coroutine patrolCoroutine;
 
-    // Ближайший подбираемый предмет
-    private GameObject nearestItem;
+    // Атакуемый объект
+    private GameObject attackTarget;
+    private GameObject nearestItem;// Ближайший подбираемый предмет
     private GameObject targetResource; // Цель добычи
+    private GameObject targetDrill; // Цель — бур
+    public GameObject autoDrillPrefab; // Назначь в инспекторе
+
+
+    private float drillCostIron = 50f;
     // Начальная точка спавна
     private Transform spawnPoint;
     // LayerMask для врагов
@@ -61,11 +73,12 @@ public class CharacterManager : MonoBehaviour
     // Компонент HealthSystem для здоровья персонажа
     public HealthSystem healthSystem;
     private CharacterInventory inventory;
-    // Атакуемый объект
-    private GameObject attackTarget;
+    
 
     void Start()
     {
+       
+
 
         inventory = GetComponent<CharacterInventory>();
         if (inventory == null)
@@ -101,6 +114,11 @@ public class CharacterManager : MonoBehaviour
 
     void Update()
     {
+        if (isHarvestingDrill && targetDrill != null)
+        {
+            HarvestFromDrill();
+        }
+
         if (isGathering && targetResource != null)
         {
 
@@ -116,9 +134,7 @@ public class CharacterManager : MonoBehaviour
 
         if (moveTarget != Vector3.zero)
         {
-            float distanceToTarget = Vector3.Distance(transform.position, moveTarget);
-
-            
+            float distanceToTarget = Vector3.Distance(transform.position, moveTarget);          
 
             if (distanceToTarget < 4f)
             {
@@ -240,6 +256,69 @@ public class CharacterManager : MonoBehaviour
     {
         isControlledByPlayer = controlled;
     }
+
+
+    private void HarvestFromDrill()
+    {
+        if (targetDrill == null || !targetDrill.activeInHierarchy)
+        {
+            StopHarvestFromDrill();
+            return;
+        }
+
+        float distanceToDrill = Vector3.Distance(transform.position, targetDrill.transform.position);
+
+        if (distanceToDrill > gatheringRange)
+        {
+            MoveToTarget(targetDrill.transform.position);
+            return;
+        }
+        else
+        {
+            navMeshAgent.SetDestination(transform.position); // Останавливаемся
+        }
+
+        AutoDrill drillScript = targetDrill.GetComponent<AutoDrill>();
+        if (drillScript == null)
+        {
+            Debug.LogWarning("У цели нет скрипта AutoDrill");
+            StopHarvestFromDrill();
+            return;
+        }
+
+        if (!drillScript.HasResources)
+        {
+            Debug.Log("Бур пуст → ожидание пополнения...");
+            return;
+        }
+
+        resourceTakeTimer += Time.deltaTime;
+        if (resourceTakeTimer >= resourceTakeCooldown)
+        {
+            float amountToTake = resourceTakeAmount;
+            float weight;
+            float taken = drillScript.TakeResources(amountToTake, out weight);
+
+            if (taken > 0)
+            {
+                inventory.AddResource(drillScript.resourceType, taken);
+                healthSystem.GainExperience(taken * experiencePerResource);
+                healthSystem.ShowExperiencePopup(taken * experiencePerResource);
+            }
+
+            resourceTakeTimer = 0f;
+        }
+    }
+
+    public void StopHarvestFromDrill()
+    {
+        isHarvestingDrill = false;
+        targetDrill = null;
+        resourceTakeTimer = 0f;
+
+        StartPatrolling(); // После окончания — патрулирование
+    }
+
 
     private void GatheringLogic()
     {
@@ -769,4 +848,42 @@ public class CharacterManager : MonoBehaviour
             Debug.Log("Предмет подобран!");
         }
     }
+
+    public void StartHarvestFromDrill(GameObject drill)
+    {
+        if (drill == null) return;
+
+        ChangeState(() =>
+        {
+            StopAllActions();
+
+            isHarvestingDrill = true;
+            targetDrill = drill;
+
+            Debug.Log($"Начата добыча из бура {drill.name}");
+        });
+    }
+    public void TryPlaceDrill()
+    {
+        if (inventory.HasResource(ResourceType.Metal, drillCostIron))
+        {
+            inventory.RemoveResource(ResourceType.Metal, drillCostIron);
+
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                Vector3 spawnPos = hit.point + Random.insideUnitSphere * 0.5f;
+                GameObject drillGO = Instantiate(autoDrillPrefab, spawnPos, Quaternion.identity);
+                Debug.Log("Бур установлен!");
+
+                StartPatrolling(); // После установки — патрулирование
+            }
+        }
+        else
+        {
+            Debug.Log("Недостаточно железа для установки бура.");
+            healthSystem.ShowExperiencePopup(0f); // Можно показать попап через HealthSystem
+        }
+    }
+    
 }

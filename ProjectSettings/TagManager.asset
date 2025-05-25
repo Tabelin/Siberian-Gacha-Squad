@@ -10,6 +10,8 @@ TagManager:
   - EnemySpawnPoint
   - Enemy
   - Resource
+  - Drill
+  - Mine
   layers:
   - Default
   - TransparentFX

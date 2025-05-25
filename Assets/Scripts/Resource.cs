@@ -7,6 +7,8 @@ public class Resource : MonoBehaviour
     public float currentAmount = 100f;
     public float weightPerUnit = 1f;
     public bool isDepleted => currentAmount <= 0;
+    public GameObject miniMinePrefab;
+
 
     void Start()
     {
@@ -40,7 +42,16 @@ public class Resource : MonoBehaviour
         // Или уничтожить его
         Destroy(gameObject);
 
-        Debug.Log($"{resourceType} исчерпан → объект скрыт.");
+        // Спавним мини-рудник
+        if (miniMinePrefab != null)
+        {
+            GameObject newMine = Instantiate(miniMinePrefab, transform.position, Quaternion.identity);
+            Debug.Log($"Ресурс исчерпан → спавнен мини-рудник {newMine.name}");
+        }
+        else
+        {
+            Debug.LogWarning("Не назначен префаб мини-рудника");
+        }
     }
 }
 

@@ -725,12 +725,18 @@ MonoBehaviour:
   rangedAttackCooldown: 0.1
   maxStuckTime: 5
   stuckTimer: 0
+  gatherTimer: 0
   gatherCooldown: 2
+  resourceTakeAmount: 20
+  resourceTakeCooldown: 2
+  resourceTakeTimer: 2
   isPatrolling: 0
   isAttacking: 0
   isGathering: 0
   isIdle: 1
   isControlledByPlayer: 0
+  isHarvestingDrill: 0
+  autoDrillPrefab: {fileID: 1413318133343161570, guid: 879b2fc5159aa904d94c0bebec8493f4, type: 3}
   enemyLayerMask:
     serializedVersion: 2
     m_Bits: 256
@@ -823,6 +829,7 @@ MonoBehaviour:
   currentHealth: 100
   attackPower: 0
   defense: 20.26
+  CarryWeight: 0
   characterName: 
   level: 1
   maxLevel: 10

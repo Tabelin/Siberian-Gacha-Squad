@@ -24,7 +24,7 @@ public class ResourceEntry
         {
             case ResourceType.Wood: return 0.5f;
             case ResourceType.Stone: return 1f;
-            case ResourceType.Metal: return 2f;
+            case ResourceType.Metal: return 1f;
             case ResourceType.Food: return 0.2f;
             default: return 1f;
         }
@@ -73,20 +73,7 @@ public class CharacterInventory : MonoBehaviour
         Debug.Log($"{amount} {type} добавлено. Текущий вес: {currentCarryWeight}/{maxCarryWeight}");
     }
 
-    public void RemoveResource(ResourceType type, float amount)
-    {
-        var entry = resources.Find(r => r.type == type);
-        if (entry != null && entry.amount >= amount)
-        {
-            entry.amount -= amount;
-            currentCarryWeight -= amount * entry.weightPerUnit;
-
-            if (entry.amount <= 0)
-            {
-                resources.Remove(entry);
-            }
-        }
-    }
+    
 
     public float GetResourceAmount(ResourceType type)
     {
@@ -103,5 +90,36 @@ public class CharacterInventory : MonoBehaviour
     {
         float limit = maxCarryWeight * 2 / 3f;
         return limit - currentCarryWeight;
+    }
+
+    public bool HasResource(ResourceType type, float amount)
+    {
+        var entry = resources.Find(r => r.type == type);
+        return entry != null && entry.amount >= amount;
+    }
+    public void RemoveResource(ResourceType type, float amount)
+    {
+        var entry = resources.Find(r => r.type == type);
+        if (entry != null && entry.amount >= amount)
+        {
+            entry.amount -= amount;
+            currentCarryWeight = CalculateTotalWeight();
+            Debug.Log($"Удалено {amount} {type}. Осталось: {entry.amount}");
+        }
+        else
+        {
+            Debug.LogWarning($"Не хватает {type} для удаления");
+        }
+    }
+    private float CalculateTotalWeight()
+    {
+        float total = 0f;
+
+        foreach (var resource in resources)
+        {
+            total += resource.amount * resource.weightPerUnit;
+        }
+
+        return total;
     }
 }

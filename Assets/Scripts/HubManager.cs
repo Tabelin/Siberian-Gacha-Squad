@@ -92,6 +92,7 @@ public class HubManager : MonoBehaviour
 
     void Update()
     {
+        
         // Сброс выбора при клике вне персонажей
         if (Input.GetMouseButtonUp(0) && !IsClickOnCharacter())
         {
@@ -116,7 +117,24 @@ public class HubManager : MonoBehaviour
             EndSelection();
         }
 
-
+        if (Input.GetMouseButtonDown(1) && selectedCharacters.Count > 0)
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                if (hit.collider.CompareTag("Mine"))
+                {
+                    foreach (GameObject character in selectedCharacters)
+                    {
+                        CharacterManager manager = character.GetComponent<CharacterManager>();
+                        if (manager != null)
+                        {
+                            manager.TryPlaceDrill(); // ✅ Вызываем установку бура
+                        }
+                    }
+                }
+            }
+        }
         // Направление выбранных персонажей на место клика мыши (правая кнопка мыши)
         if (selectedCharacters.Count > 0 && Input.GetMouseButtonDown(1))
         {
@@ -135,6 +153,18 @@ public class HubManager : MonoBehaviour
                         {
                             manager.SetControlledByPlayer(true); // Переводим в режим управления
                             manager.StartGathering(resource);     // 🚀 Теперь передаём параметр
+                        }
+                    }
+                }
+                else if (hit.collider.CompareTag("Drill"))
+                {
+                    foreach (GameObject character in selectedCharacters)
+                    {
+                        CharacterManager manager = character.GetComponent<CharacterManager>();
+                        if (manager != null)
+                        {
+                            manager.SetControlledByPlayer(true);
+                            manager.StartHarvestFromDrill(hit.collider.gameObject); // ✅ Теперь работает
                         }
                     }
                 }
