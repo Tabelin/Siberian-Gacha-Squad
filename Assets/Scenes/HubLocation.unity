@@ -538,9 +538,29 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6386731038005330597, guid: 2be9fe11c8947bd46a5db98db110331a, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
     - target: {fileID: 6471883928496080469, guid: 2be9fe11c8947bd46a5db98db110331a, type: 3}
       propertyPath: m_Name
       value: meteoreFBX
+      objectReference: {fileID: 0}
+    - target: {fileID: 6471883928496080469, guid: 2be9fe11c8947bd46a5db98db110331a, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 6817828033427048800, guid: 2be9fe11c8947bd46a5db98db110331a, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 7621608932519115115, guid: 2be9fe11c8947bd46a5db98db110331a, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 8861746470409348715, guid: 2be9fe11c8947bd46a5db98db110331a, type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1390,10 +1410,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyPrefab: {fileID: 8059109655280088047, guid: 1d74de9ebb25c10419970d96792d27a1, type: 3}
   spawnPointTag: EnemySpawnPoint
-  spawnCountPerPoint: 0
-  minEnemyLevel: 99
-  maxEnemyLevel: 99
-  enemyMaxLevel: 99
+  spawnCountPerPoint: 3
+  minEnemyLevel: 10
+  maxEnemyLevel: 10
+  enemyMaxLevel: 10
 --- !u!4 &2084288107
 Transform:
   m_ObjectHideFlags: 0

@@ -10,15 +10,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: c09f1b746a238034a8435862b36e5790, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -20.05
+      value: -20.003788
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: c09f1b746a238034a8435862b36e5790, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -6.95
+      value: -6.92
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: c09f1b746a238034a8435862b36e5790, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -23.824745
+      value: -23.78
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: c09f1b746a238034a8435862b36e5790, type: 3}
       propertyPath: m_LocalRotation.w
@@ -48,9 +48,25 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -8391222552659086748, guid: c09f1b746a238034a8435862b36e5790, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: -8236076569268209247, guid: c09f1b746a238034a8435862b36e5790, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: -5770634479784780433, guid: c09f1b746a238034a8435862b36e5790, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: c09f1b746a238034a8435862b36e5790, type: 3}
       propertyPath: m_Name
       value: meteoreFBX
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: c09f1b746a238034a8435862b36e5790, type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: c09f1b746a238034a8435862b36e5790, type: 3}
       propertyPath: m_IsActive
@@ -59,6 +75,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: c09f1b746a238034a8435862b36e5790, type: 3}
       propertyPath: m_TagString
       value: Resource
+      objectReference: {fileID: 0}
+    - target: {fileID: 4383353755243004527, guid: c09f1b746a238034a8435862b36e5790, type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -89,8 +109,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   resourceType: 3
-  maxAmount: 100
-  currentAmount: 100
+  maxAmount: 52.5
+  currentAmount: 52
   weightPerUnit: 1
   miniMinePrefab: {fileID: 5929816039615850029, guid: 8c1d16868675fb14fae2ba6960b50be5, type: 3}
 --- !u!65 &1902653283402795806

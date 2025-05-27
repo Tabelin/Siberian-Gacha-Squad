@@ -720,6 +720,7 @@ MonoBehaviour:
   moveSpeed: 3.73
   patrolRadius: 12.39
   detectionRadius: 19
+  autoGatherRadius: 12
   gatheringRange: 3
   meleeAttackCooldown: 0.1
   rangedAttackCooldown: 0.1
@@ -739,6 +740,9 @@ MonoBehaviour:
   enemyLayerMask:
     serializedVersion: 2
     m_Bits: 256
+  gatherLayerMask:
+    serializedVersion: 2
+    m_Bits: 512
   healthSystem: {fileID: 6168539937531707809}
 --- !u!136 &4681455755440127831
 CapsuleCollider:

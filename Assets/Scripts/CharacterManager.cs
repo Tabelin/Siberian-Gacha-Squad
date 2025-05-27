@@ -15,6 +15,7 @@ public class CharacterManager : MonoBehaviour
     private float meleeAttackRange = 2f;  // Радиус дальней атаки
     private float rangedAttackRange = 15f; // Время задержки между атаками
     public float detectionRadius = 20f; // Радиус обнаружения
+    public float autoGatherRadius = 11111111111111111111111111111111111111f; // Радиус поиска шахт и буров
     public float gatheringRange = 3f;
 
     public float meleeAttackCooldown = 1f; // Задержка для ближней атаки
@@ -63,8 +64,10 @@ public class CharacterManager : MonoBehaviour
 
     // Начальная точка спавна
     private Transform spawnPoint;
-    // LayerMask для врагов
-    public LayerMask enemyLayerMask;
+   
+    public LayerMask enemyLayerMask;   //поиск
+    public LayerMask gatherLayerMask;
+
 
     // Компонент NavMeshAgent для поиска пути
     private UnityEngine.AI.NavMeshAgent navMeshAgent;
@@ -115,16 +118,24 @@ public class CharacterManager : MonoBehaviour
 
     void Update()
     {
+        
         if (isHarvestingDrill && targetDrill != null)
         {
             HarvestFromDrill();
         }
 
-        if (isGathering && targetResource != null)
+        if (isGathering && targetResource != null && isControlledByPlayer == true)
+        {
+
+            StopAllActions();
+            return;
+        }
+
+        if (isGathering && targetResource != null && isAttacking == false)
         {
 
             GatheringLogic();
-            isControlledByPlayer = false;
+            //f
             return;
         }
         else
@@ -133,16 +144,45 @@ public class CharacterManager : MonoBehaviour
             MoveToTarget(moveTarget);
         }
 
+        if (isAttacking == true)
+        {
+            StopAllActions();
+            DetectEnemies(); 
+            AttackLogic();
+            //f
+            return;
+        }
+        if (isControlledByPlayer == false)
+        {
+            AutoGatherIfEmpty();
+
+            CheckMoveComplete();
+            return;
+        }
+
+
+
+
+
+        if (isGathering && targetDrill != null)      
+        {
+            targetResource = null;
+            isGathering = false;
+            
+            isControlledByPlayer = false;
+        }
+        
         if (moveTarget != Vector3.zero)
         {
-            float distanceToTarget = Vector3.Distance(transform.position, moveTarget);          
-
+            float distanceToTarget = Vector3.Distance(transform.position, moveTarget);
+            
             if (distanceToTarget < 4f)
             {
 
                 // Цель достигнута → сбрасываем флаг
                 moveTarget = Vector3.zero;
                 isControlledByPlayer = false;
+
                 StartPatrolling();
                 return;
             }
@@ -233,6 +273,8 @@ public class CharacterManager : MonoBehaviour
             // Атака, если цель в зоне
             AttackLogic();
             DetectEnemies(); // Обнаружение врагов
+            
+
         }
         // Если цель недоступна, но атака всё ещё активна
         else if (isAttacking && attackTarget == null)
@@ -325,7 +367,7 @@ public class CharacterManager : MonoBehaviour
     {
         if (isControlledByPlayer)
         {
-            return; // нееет копать с контролем
+            return; // неее копать с контролем
         }
 
         if (targetResource == null || !targetResource.activeInHierarchy)
@@ -741,11 +783,6 @@ public class CharacterManager : MonoBehaviour
             
         }
     }
-    // Метод для добычи ресурсов
-    private void Gather()
-    {
-        Debug.Log("Персонаж добывает ресурсы!");
-    }
 
     // Метод для бездействия и управления игроком
     private void IdleControl()
@@ -772,7 +809,6 @@ public class CharacterManager : MonoBehaviour
 
             // Останавливаем текущее патрулирование
             StopPatrol();
-            //isControlledByPlayer = false;
             // Устанавливаем цель для NavMeshAgent
             if (navMeshAgent != null)
             {
@@ -780,6 +816,7 @@ public class CharacterManager : MonoBehaviour
                 navMeshAgent.speed = moveSpeed; // Задаем скорость движения
                 navMeshAgent.isStopped = false; // Разрешаем движение
                 patrolCenter = targetPosition;
+ 
             }
         }
     }
@@ -852,6 +889,11 @@ public class CharacterManager : MonoBehaviour
 
     public void StartHarvestFromDrill(GameObject drill)
     {
+        if (isControlledByPlayer)
+        {
+            return; // Если персонаж под контролем игрока → не запускаем автоматические действия
+        } 
+
         if (drill == null) return;
 
         ChangeState(() =>
@@ -873,5 +915,75 @@ public class CharacterManager : MonoBehaviour
     public void PayForResource(float cost, ResourceType type)
     {
         inventory.RemoveResource(type, cost);
+    }
+    private void AutoGatherIfEmpty()
+    {
+        
+        if (isControlledByPlayer) return; // Не проверяем, если под контролем игрока
+
+        // Если инвентарь заполнен более чем на 2/3 → не собираем
+        //if (inventory.IsCarryingMoreThan(2 / 3f))
+        // {
+        //    return;
+        // }
+
+        // Ищем шахты и буры в радиусе
+        Collider[] targets = Physics.OverlapSphere(transform.position, autoGatherRadius, gatherLayerMask);
+
+        if (targets.Length > 0)
+        {
+            
+            GameObject closestTarget = null;
+            float minDistance = Mathf.Infinity;
+
+            foreach (var target in targets)
+            {
+                float distance = Vector3.Distance(transform.position, target.transform.position);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    closestTarget = target.gameObject;
+                }
+            }
+
+            if (closestTarget != null)
+            {
+                isPatrolling = false;
+                if (closestTarget.CompareTag("Resource"))
+                {
+                    StartGathering(closestTarget); // Начинаем добычу с шахты
+                }
+                else if (closestTarget.CompareTag("Resource"))
+                {
+                    StartHarvestFromDrill(closestTarget); // Начинаем сбор с бура
+                }
+            }
+        }
+    }
+    private void CheckMoveComplete()
+    {
+        // Проверяем, закончил ли движение
+        if (navMeshAgent != null && !navMeshAgent.pathPending)
+        {
+            float remainingDistance = navMeshAgent.remainingDistance;
+            float stoppingDistance = navMeshAgent.stoppingDistance;
+
+            // Если остановились в точке назначения
+            if (remainingDistance <= stoppingDistance + 0.1f)
+            {
+                // Сбрасываем moveTarget и передаём управление автоматике
+                isControlledByPlayer = false;
+                moveTarget = Vector3.zero;
+            }
+        }
+
+        // Дополнительно: можно проверить, стоит ли персонаж вообще
+        if (navMeshAgent.velocity.magnitude < 0.1f && navMeshAgent.remainingDistance < 0.2f)
+        {
+            Debug.Log("Персонаж остановился → выход из режима управления");
+            isControlledByPlayer = false;
+            moveTarget = Vector3.zero;
+            StartPatrolling();
+        }
     }
 }

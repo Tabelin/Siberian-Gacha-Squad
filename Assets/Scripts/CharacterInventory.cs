@@ -111,13 +111,19 @@ public class CharacterInventory : MonoBehaviour
             Debug.LogWarning($"Не хватает {type} для удаления");
         }
     }
+  
+    public bool IsCarryingMoreThan(float ratio)
+    {
+        return CalculateTotalWeight() >= maxCarryWeight * ratio;
+    }
+
     private float CalculateTotalWeight()
     {
         float total = 0f;
 
-        foreach (var resource in resources)
+        foreach (var entry in resources)
         {
-            total += resource.amount * resource.weightPerUnit;
+            total += entry.TotalWeight;
         }
 
         return total;
