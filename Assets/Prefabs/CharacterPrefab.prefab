@@ -737,6 +737,7 @@ MonoBehaviour:
   isIdle: 1
   isControlledByPlayer: 0
   isHarvestingDrill: 0
+  grenadePrefab: {fileID: 544259579663081247, guid: 8eaac25a078eb98459083c5369f03423, type: 3}
   enemyLayerMask:
     serializedVersion: 2
     m_Bits: 256

@@ -15,7 +15,7 @@ public class CharacterManager : MonoBehaviour
     private float meleeAttackRange = 2f;  // Радиус дальней атаки
     private float rangedAttackRange = 15f; // Время задержки между атаками
     public float detectionRadius = 20f; // Радиус обнаружения
-    public float autoGatherRadius = 11111111111111111111111111111111111111f; // Радиус поиска шахт и буров
+    public float autoGatherRadius = 16f; // Радиус поиска шахт и буров
     public float gatheringRange = 3f;
 
     public float meleeAttackCooldown = 1f; // Задержка для ближней атаки
@@ -44,23 +44,23 @@ public class CharacterManager : MonoBehaviour
     private Vector3 moveTarget;             // Целевая точка для движения (приоритетная команда игрока)
 
 
-    public bool isPatrolling = true; // Патрулирование
-    public bool isAttacking = false; // Атака
-    public bool isGathering = false; // Добыча ресурсов
-    public bool isIdle = false; // Бездействие
+    public bool isPatrolling = true;  // Патрулирование
+    public bool isAttacking = false;  // Атака
+    public bool isGathering = false;  // Добыча ресурсов
+    public bool isIdle = false;       // Бездействие
     public bool isControlledByPlayer = false; // Флаг управления игроком
     public bool isHarvestingDrill = false;
-
+    private bool isThrowingGrenade = false;
 
     // Корутина патрулирования
     private Coroutine patrolCoroutine;
 
-    // Атакуемый объект
-    private GameObject attackTarget;
+    
+    private GameObject attackTarget;// Атакуемый объект
     private GameObject nearestItem;// Ближайший подбираемый предмет
     private GameObject targetResource; // Цель добычи
     private GameObject targetDrill; // Цель — бур
-
+    public GameObject grenadePrefab; // граната преф
 
     // Начальная точка спавна
     private Transform spawnPoint;
@@ -985,5 +985,30 @@ public class CharacterManager : MonoBehaviour
             moveTarget = Vector3.zero;
             StartPatrolling();
         }
+    }
+
+    public void ThrowGrenade(Vector3 target)
+    {
+        if (isControlledByPlayer || isThrowingGrenade) return;
+
+        isThrowingGrenade = true;
+
+        Vector3 spawnPos = transform.position + Vector3.up * 1.5f;
+
+        GameObject grenadeGO = Instantiate(grenadePrefab, spawnPos, Quaternion.identity);
+        Grenade grenade = grenadeGO.GetComponent<Grenade>();
+
+        if (grenade != null)
+        {
+            grenade.LaunchTo(target);
+        }
+
+        StartCoroutine(ResetThrowState());
+    }
+
+    private IEnumerator ResetThrowState()
+    {
+        yield return new WaitForSeconds(2f); // Время между бросками
+        isThrowingGrenade = false;
     }
 }

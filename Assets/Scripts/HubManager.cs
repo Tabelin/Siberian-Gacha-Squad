@@ -97,7 +97,10 @@ public class HubManager : MonoBehaviour
 
     void Update()
     {
-        
+
+        HandleLeftClick();  // grenade pruf
+
+
         // Сброс выбора при клике вне персонажей
         if (Input.GetMouseButtonUp(0) && !IsClickOnCharacter())
         {
@@ -696,5 +699,33 @@ public class HubManager : MonoBehaviour
         }
 
         selectedCharacters.Clear(); // Очищаем список выбранных персонажей
+    }
+
+    private void HandleLeftClick()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                if (hit.collider.CompareTag("Enemy") ||
+                    hit.collider.CompareTag("Resource") ||
+                    hit.collider.CompareTag("Drill"))
+                {
+                    // Это не точка — это объект → не бросаем гранату
+                    return;
+                }
+
+                foreach (GameObject character in selectedCharacters)
+                {
+                    CharacterManager manager = character.GetComponent<CharacterManager>();
+                    if (manager != null)
+                    {
+                        manager.ThrowGrenade(hit.point);
+                    }
+                }
+            }
+        }
     }
 }
