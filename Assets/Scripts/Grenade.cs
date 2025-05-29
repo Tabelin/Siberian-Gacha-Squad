@@ -7,8 +7,7 @@ public class Grenade : MonoBehaviour
     public float explosionRadius = 7f;
     public float speed = 15f;
 
-    public LayerMask enemyLayerMask;
-
+    public LayerMask allLayerMask;
     private Vector3[] path;
     private int currentPoint = 0;
     private float timeSinceLaunch = 0f;
@@ -102,14 +101,15 @@ public class Grenade : MonoBehaviour
 
     private void Explode()
     {
-        Collider[] enemies = Physics.OverlapSphere(transform.position, explosionRadius, enemyLayerMask);
+        Collider[] affected = Physics.OverlapSphere(transform.position, explosionRadius, allLayerMask);
 
-        foreach (Collider enemy in enemies)
+        foreach (Collider col in affected)
         {
-            HealthSystem health = enemy.GetComponent<HealthSystem>();
+            HealthSystem health = col.GetComponent<HealthSystem>();
             if (health != null)
             {
                 health.TakeDamage(damage);
+                Debug.Log($"💥 Нанесено {damage} урона по {col.name}");
             }
         }
 

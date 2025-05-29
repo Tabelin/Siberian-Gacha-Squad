@@ -118,7 +118,7 @@ public class CharacterManager : MonoBehaviour
 
     void Update()
     {
-        
+        DetectEnemies();
         if (isHarvestingDrill && targetDrill != null)
         {
             HarvestFromDrill();

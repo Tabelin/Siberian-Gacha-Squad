@@ -130,7 +130,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   damage: 50
   explosionRadius: 4
-  speed: 18
-  enemyLayerMask:
+  speed: 19.3
+  allLayerMask:
     serializedVersion: 2
-    m_Bits: 256
+    m_Bits: 384
