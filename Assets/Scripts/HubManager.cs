@@ -13,7 +13,7 @@ public class HubManager : MonoBehaviour
 
     // Радиус изменения позиции спавна
     public float spawnRadius = 2f;
-
+    public float maxThrowDistance = 60f;
     // Основная точка спавна (один спавн-поинт для всех)
     public Transform mainSpawnPoint;
 
@@ -52,7 +52,7 @@ public class HubManager : MonoBehaviour
     // Флаг для проверки нажатия мыши
     private bool isSelecting = false;
     private bool isGrenadeMode = false;
-
+    private bool isTooFar = false;
 
 
     public GrenadeVisual grenadeVisual;
@@ -735,6 +735,18 @@ public class HubManager : MonoBehaviour
                     CharacterManager manager = character.GetComponent<CharacterManager>();
                     if (manager != null)
                     {
+
+
+
+                        Vector3 startPos = manager.transform.position + Vector3.up * 1.5f;
+                        float distance = Vector3.Distance(startPos, hit.point);
+
+                        if (distance > maxThrowDistance)
+                        {
+                            Debug.Log($"🎯 Цель слишком далека: {distance:F2} > {maxThrowDistance}");
+                            continue;
+                        }
+
                         manager.ReleaseGrenade(hit.point);
                     }
                 }
@@ -756,6 +768,10 @@ public class HubManager : MonoBehaviour
             Vector3 startPos = selectedCharacters[0].transform.position + Vector3.up * 1.5f;
 
             grenadeVisual.ShowTrajectory(startPos, aimTarget);
+            // Обновляем траекторию, даже если цель слишком далеко
+            bool canThrow = grenadeVisual.UpdateTrajectory(startPos, aimTarget);
+
+            isTooFar = !canThrow;
         }
     }
 }

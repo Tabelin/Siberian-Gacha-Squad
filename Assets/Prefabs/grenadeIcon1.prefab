@@ -128,10 +128,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f9944210f3483a4e96b0206425930dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  explosionRadius: 4
   damage: 50
-  throwSpeed: 20
-  explosionDelay: 2
+  explosionRadius: 4
+  speed: 18
   enemyLayerMask:
     serializedVersion: 2
     m_Bits: 256

@@ -379,6 +379,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterPrefab: {fileID: 1702766904372811578, guid: 2c0228ba809a715468c264d32e08e114, type: 3}
   spawnRadius: 8
+  maxThrowDistance: 60
   mainSpawnPoint: {fileID: 407232676}
   commonBackgroundController: {fileID: 9100000, guid: fa21f9f420bb1b94991e494c3e78675e, type: 2}
   rareBackgroundController: {fileID: 9100000, guid: 868ef7196d616cc46ae680d5dfb1be87, type: 2}

@@ -17,6 +17,8 @@ public class CharacterManager : MonoBehaviour
     public float detectionRadius = 20f; // Радиус обнаружения
     public float autoGatherRadius = 16f; // Радиус поиска шахт и буров
     public float gatheringRange = 3f;
+    public float maxThrowDistance = 60f; // дальность кидания гранат
+
 
     public float meleeAttackCooldown = 1f; // Задержка для ближней атаки
     public float rangedAttackCooldown = 2f; // Задержка для дальней атаки
@@ -1012,26 +1014,35 @@ public class CharacterManager : MonoBehaviour
 
     public void StartAimGrenade()
     {
+       // if (isControlledByPlayer) return;
+
         isAimingGrenade = true;
+        navMeshAgent.isStopped = true; // ❌ Персонаж останавливается
     }
 
     public void ReleaseGrenade(Vector3 target)
     {
-        if (!isAimingGrenade || grenadePrefab == null)
+        float distance = Vector3.Distance(transform.position, target);
+        if (distance > maxThrowDistance)
         {
+            Debug.Log($"💥 Цель слишком далека: {distance:F2} > {maxThrowDistance}");
+            isAimingGrenade = false;
+            navMeshAgent.isStopped = false;
             return;
         }
 
-        // Спавним гранату выше, чтобы не падала под ноги
-        Vector3 spawnPos = transform.position + Vector3.up * 1.5f;
-        GameObject grenadeGO = Instantiate(grenadePrefab, spawnPos, Quaternion.identity);
-
-        Grenade grenadeScript = grenadeGO.GetComponent<Grenade>();
-        if (grenadeScript != null)
+        if (grenadePrefab != null)
         {
-            grenadeScript.Launch(target); // Запуск полёта
+            Vector3 spawnPos = transform.position + Vector3.up * 1.5f;
+            GameObject grenadeGO = Instantiate(grenadePrefab, spawnPos, Quaternion.identity);
+            Grenade grenadeScript = grenadeGO.GetComponent<Grenade>();
+            if (grenadeScript != null)
+            {
+                grenadeScript.Launch(target);
+            }
         }
-
+        // Сбрасываем флаги
         isAimingGrenade = false;
+        navMeshAgent.isStopped = false;
     }
 }
