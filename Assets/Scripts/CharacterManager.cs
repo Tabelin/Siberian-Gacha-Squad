@@ -38,7 +38,7 @@ public class CharacterManager : MonoBehaviour
     // Центральная точка патрулирования
     private Vector3 patrolCenter;
 
-
+    private Vector3 aimTarget;
     private Vector3 currentPatrolTarget;    // Текущая цель патрулирования
     private Vector3 lastPosition;           // Для определения реального перемещения
     private Vector3 moveTarget;             // Целевая точка для движения (приоритетная команда игрока)
@@ -51,6 +51,7 @@ public class CharacterManager : MonoBehaviour
     public bool isControlledByPlayer = false; // Флаг управления игроком
     public bool isHarvestingDrill = false;
     private bool isThrowingGrenade = false;
+    public bool isAimingGrenade = false;
 
     // Корутина патрулирования
     private Coroutine patrolCoroutine;
@@ -74,10 +75,7 @@ public class CharacterManager : MonoBehaviour
     // Компонент HealthSystem для здоровья персонажа
     public HealthSystem healthSystem;
     private CharacterInventory inventory;
-
-
-
-    
+   
 
     void Start()
     {
@@ -1000,7 +998,7 @@ public class CharacterManager : MonoBehaviour
 
         if (grenade != null)
         {
-            grenade.LaunchTo(target);
+            grenade.Launch(target);
         }
 
         StartCoroutine(ResetThrowState());
@@ -1010,5 +1008,30 @@ public class CharacterManager : MonoBehaviour
     {
         yield return new WaitForSeconds(2f); // Время между бросками
         isThrowingGrenade = false;
+    }
+
+    public void StartAimGrenade()
+    {
+        isAimingGrenade = true;
+    }
+
+    public void ReleaseGrenade(Vector3 target)
+    {
+        if (!isAimingGrenade || grenadePrefab == null)
+        {
+            return;
+        }
+
+        // Спавним гранату выше, чтобы не падала под ноги
+        Vector3 spawnPos = transform.position + Vector3.up * 1.5f;
+        GameObject grenadeGO = Instantiate(grenadePrefab, spawnPos, Quaternion.identity);
+
+        Grenade grenadeScript = grenadeGO.GetComponent<Grenade>();
+        if (grenadeScript != null)
+        {
+            grenadeScript.Launch(target); // Запуск полёта
+        }
+
+        isAimingGrenade = false;
     }
 }

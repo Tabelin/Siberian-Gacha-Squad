@@ -43,16 +43,19 @@ public class HubManager : MonoBehaviour
 
     public GameObject autoDrillPrefab;
     private GameObject selectedResource;
+    private GameObject selectionBox;      // Рамка выделения (создаётся динамически)
+
 
     // Позиция начала выделения
     private Vector3 selectionStart;
-
+    private Vector3 aimTarget;
     // Флаг для проверки нажатия мыши
     private bool isSelecting = false;
+    private bool isGrenadeMode = false;
 
-    // Рамка выделения (создаётся динамически)
-    private GameObject selectionBox;
 
+
+    public GrenadeVisual grenadeVisual;
     // Камера
     private Camera mainCamera;
 
@@ -99,7 +102,7 @@ public class HubManager : MonoBehaviour
     {
 
         HandleLeftClick();  // grenade pruf
-
+        HandleGrenadeAiming();
 
         // Сброс выбора при клике вне персонажей
         if (Input.GetMouseButtonUp(0) && !IsClickOnCharacter())
@@ -706,26 +709,53 @@ public class HubManager : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
-                if (hit.collider.CompareTag("Enemy") ||
-                    hit.collider.CompareTag("Resource") ||
-                    hit.collider.CompareTag("Drill"))
+                // Проверяем, кликнули ли по персонажу
+                GameObject clickedObject = hit.collider.gameObject;
+                CharacterManager manager = clickedObject.GetComponent<CharacterManager>();
+                if (manager != null)
                 {
-                    // Это не точка — это объект → не бросаем гранату
+                    selectedCharacters.Clear();
+                    selectedCharacters.Add(clickedObject);
+                    manager.StartAimGrenade(); // Переводим в режим прицеливания
+                    isGrenadeMode = true;
                     return;
                 }
+            }
+        }
 
+        if (Input.GetMouseButtonUp(0) && isGrenadeMode && selectedCharacters.Count > 0)
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
                 foreach (GameObject character in selectedCharacters)
                 {
                     CharacterManager manager = character.GetComponent<CharacterManager>();
                     if (manager != null)
                     {
-                        manager.ThrowGrenade(hit.point);
+                        manager.ReleaseGrenade(hit.point);
                     }
                 }
             }
+
+            isGrenadeMode = false;
+            grenadeVisual.HideTrajectory();
+        }
+    }
+    private void HandleGrenadeAiming()
+    {
+        if (!isGrenadeMode || selectedCharacters.Count == 0)
+            return;
+
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray, out RaycastHit hit))
+        {
+            aimTarget = hit.point;
+            Vector3 startPos = selectedCharacters[0].transform.position + Vector3.up * 1.5f;
+
+            grenadeVisual.ShowTrajectory(startPos, aimTarget);
         }
     }
 }
