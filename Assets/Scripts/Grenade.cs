@@ -4,7 +4,7 @@ using System.Collections;
 [RequireComponent(typeof(LineRenderer))]
 public class Grenade : MonoBehaviour
 {
-    public float damage = 50f;
+    public float baseDamage = 50f;
     public float explosionRadius = 3f;
     public float throwSpeed = 10f;
     public float explosionDelay = 2f;
@@ -21,8 +21,7 @@ public class Grenade : MonoBehaviour
     private SpriteRenderer spriteRenderer;
 
     private bool isFlashing = false;
-    private float flashTimer = 0f;
-    private float flashInterval = 0.2f;
+
     private Color originalColor = Color.white;
 
     void Start()
@@ -144,9 +143,27 @@ public class Grenade : MonoBehaviour
             HealthSystem health = col.GetComponent<HealthSystem>();
             if (health != null)
             {
-                health.TakeDamage(damage);
-                Debug.Log($"💥 Нанесено {damage} урона по {col.name}");
+                Vector3 directionToTarget = col.transform.position - transform.position;
+                float distance = directionToTarget.magnitude;
+
+                // Чем дальше от центра → тем меньше урона
+                float damageMultiplier = Mathf.InverseLerp(explosionRadius, 0f, distance);
+                float finalDamage = baseDamage * damageMultiplier;
+
+                // Игнорируем 50% защиты
+                float armorIgnore = 0.5f; // 50%
+                float effectiveDefense = health.defense * (1f - armorIgnore);
+
+                // Вычисляем урон с учётом защиты и игнорирования
+                float damageToApply = Mathf.Max(finalDamage - effectiveDefense, finalDamage * 0.2f); // Минимум 20% урона
+
+                health.TakeDamage(damageToApply);
+                Debug.Log($"💥 Нанесено {damageToApply:F2} урона по {col.name} | Защита: {effectiveDefense:F2}");
             }
+            //{
+            //    health.TakeDamage(damage);
+            //    Debug.Log($"💥 Нанесено {damage} урона по {col.name}");
+            //}
         }
 
         Debug.Log("💥 Граната взорвалась");

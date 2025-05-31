@@ -101,8 +101,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f9944210f3483a4e96b0206425930dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  damage: 509
-  explosionRadius: 7
+  baseDamage: 500
+  explosionRadius: 10
   throwSpeed: 23
   explosionDelay: 2
   damageLayerMask:
