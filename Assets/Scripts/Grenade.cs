@@ -4,6 +4,21 @@ using System.Collections;
 [RequireComponent(typeof(LineRenderer))]
 public class Grenade : MonoBehaviour
 {
+    public enum GrenadeType
+    {
+        Frag,
+        Smoke,
+        Flash,
+        Incendiary
+    }
+
+    [Header("Настройки гранаты")]
+    public GrenadeType type = GrenadeType.Frag;
+    [Header("Графика")]
+    public Sprite sprite; // Для 2D
+    public GameObject model; // Для 3D модели
+
+    public float weight = 2f;
     public float baseDamage = 50f;
     public float explosionRadius = 3f;
     public float throwSpeed = 10f;
@@ -24,9 +39,53 @@ public class Grenade : MonoBehaviour
 
     private Color originalColor = Color.white;
 
+
+    public void SetupStats()
+    {
+        switch (type)
+        {
+            case GrenadeType.Frag:
+                baseDamage = 500f;
+                explosionRadius = 11f;
+                weight = 2f;
+                break;
+
+            case GrenadeType.Smoke:
+                baseDamage = 0f;
+                explosionRadius = 5f;
+                weight = 1.5f;
+                break;
+
+            case GrenadeType.Flash:
+                baseDamage = 0f;
+                explosionRadius = 4f;
+                weight = 1.2f;
+                break;
+
+            case GrenadeType.Incendiary:
+                baseDamage = 60f;
+                explosionRadius = 2.5f;
+                weight = 2.8f;
+                break;
+        }
+    }
+
+
+
+
+
+
     void Start()
     {
+        SetupVisual();
+        SetupStats();
+
         // Подготавливаем LineRenderer для отрисовки радиуса взрыва
+        CreateExplosionCircle();
+    }
+
+    private void CreateExplosionCircle()
+    {
         GameObject lineGO = new GameObject("ExplosionCircle");
         explosionLineRenderer = lineGO.AddComponent<LineRenderer>();
         explosionLineRenderer.material = new Material(Shader.Find("Sprites/Default"));
@@ -35,19 +94,18 @@ public class Grenade : MonoBehaviour
         explosionLineRenderer.loop = true;
         explosionLineRenderer.startWidth = 0.1f;
         explosionLineRenderer.enabled = false;
+    }
+    private void SetupVisual()
+    {
+        if (spriteRenderer != null)
+            spriteRenderer.sprite = sprite;
 
-        // Находим рендереры
-        meshRenderer = GetComponent<MeshRenderer>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
-
-        if (meshRenderer != null)
-            originalColor = meshRenderer.material.color;
-        else if (spriteRenderer != null)
-            originalColor = spriteRenderer.color;
-        else
-            Debug.LogWarning("Нет Renderer компонентов для мигания");
-
-        explosionLineRenderer.enabled = false;
+        if (model != null && transform.childCount == 0)
+        {
+            GameObject modelGO = Instantiate(model, transform.position, Quaternion.identity, transform);
+            meshRenderer = modelGO.GetComponent<MeshRenderer>();
+            spriteRenderer = GetComponent<SpriteRenderer>();
+        }
     }
 
     void Update()
@@ -116,7 +174,7 @@ public class Grenade : MonoBehaviour
         // 🚫 Скрываем или удаляем LineRenderer
         explosionLineRenderer.enabled = false;
         Destroy(explosionLineRenderer.gameObject, 0.5f); // Можно через полсекунды
-
+        isFlashing = false;
         // Уничтожаем всё после взрыва
         yield return new WaitForSeconds(0.5f); // Пауза после взрыва
         Destroy(gameObject);
@@ -125,6 +183,8 @@ public class Grenade : MonoBehaviour
     private void DrawExplosionRadius(float radius)
     {
         explosionLineRenderer.enabled = true;
+        explosionLineRenderer.startColor = GetExplosionColor(type);
+        explosionLineRenderer.endColor = GetExplosionColor(type);
 
         for (int i = 0; i < 36; i++)
         {
@@ -158,16 +218,9 @@ public class Grenade : MonoBehaviour
                 float damageToApply = Mathf.Max(finalDamage - effectiveDefense, finalDamage * 0.2f); // Минимум 20% урона
 
                 health.TakeDamage(damageToApply);
-                Debug.Log($"💥 Нанесено {damageToApply:F2} урона по {col.name} | Защита: {effectiveDefense:F2}");
+
             }
-            //{
-            //    health.TakeDamage(damage);
-            //    Debug.Log($"💥 Нанесено {damage} урона по {col.name}");
-            //}
         }
-
-        Debug.Log("💥 Граната взорвалась");
-
         // Можно добавить VFX или звук здесь
     }
 
@@ -197,5 +250,22 @@ public class Grenade : MonoBehaviour
         }
 
         return points;
+    }
+
+    private Color GetExplosionColor(GrenadeType grenadeType)
+    {
+        switch (grenadeType)
+        {
+            case GrenadeType.Frag: return Color.red;
+            case GrenadeType.Smoke: return Color.gray;
+            case GrenadeType.Flash: return Color.yellow;
+            case GrenadeType.Incendiary: return Color.blue;
+            default: return Color.white;
+        }
+    }
+    public void SetGrenadeType(GrenadeType newType)
+    {
+        type = newType;
+        SetupStats();
     }
 }

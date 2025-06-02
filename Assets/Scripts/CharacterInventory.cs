@@ -128,4 +128,14 @@ public class CharacterInventory : MonoBehaviour
 
         return total;
     }
+    [System.Serializable]
+    public class GrenadeData
+    {
+        public Grenade.GrenadeType type;
+        public float baseDamage;
+        public float explosionRadius;
+        public float weight;
+        public Sprite icon;
+        public GameObject modelPrefab;
+    }
 }
